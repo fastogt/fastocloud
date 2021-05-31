@@ -25,7 +25,9 @@ RUN set -ex; \
 COPY docker/fastocloud.conf /etc/
 RUN mkdir /var/run/$APP_NAME && chown $USER:$USER /var/run/$APP_NAME
 VOLUME /var/run/$APP_NAME
-WORKDIR /var/run/$APP_NAME
+
+USER $USER
+WORKDIR /home/$USER
 
 ENTRYPOINT ["fastocloud"]
 
