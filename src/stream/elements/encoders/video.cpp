@@ -129,7 +129,10 @@ Element* build_video_scale(int width, int height, ILinker* linker, Element* link
   return capsfilter;
 }
 
-Element* build_video_framerate(int framerate, ILinker* linker, Element* link_to, element_id_t video_framerate_id) {
+Element* build_video_framerate(const common::media::Rational& framerate,
+                               ILinker* linker,
+                               Element* link_to,
+                               element_id_t video_framerate_id) {
   video::ElementVideoRate* videorate =
       new video::ElementVideoRate(common::MemSPrintf(VIDEO_RATE_NAME_1U, video_framerate_id));
   ElementCapsFilter* capsfilter =
@@ -137,7 +140,8 @@ Element* build_video_framerate(int framerate, ILinker* linker, Element* link_to,
   linker->ElementAdd(videorate);
   linker->ElementAdd(capsfilter);
 
-  GstCaps* cap_framerate = gst_caps_new_simple("video/x-raw", "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr);
+  GstCaps* cap_framerate =
+      gst_caps_new_simple("video/x-raw", "framerate", GST_TYPE_FRACTION, framerate.num, framerate.den, nullptr);
   capsfilter->SetCaps(cap_framerate);
   gst_caps_unref(cap_framerate);
 

@@ -239,7 +239,13 @@ Validity validate_cleanupts(const common::Value* value) {
 }
 
 Validity validate_framerate(const common::Value* value) {
-  return validate_is_positive(value, false);
+  std::string rat_str;
+  if (!value->GetAsBasicString(&rat_str)) {
+    return Validity::INVALID;
+  }
+
+  common::media::Rational rat;
+  return common::ConvertFromString(rat_str, &rat) ? Validity::VALID : Validity::INVALID;
 }
 
 Validity validate_aspect_ratio(const common::Value* value) {

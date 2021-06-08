@@ -283,9 +283,10 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
       econfig->SetDeinterlace(deinterlace);
     }
 
-    int frame_rate;
-    common::Value* frame_rate_field = config_args->Find(FRAME_RATE_FIELD);
-    if (frame_rate_field && frame_rate_field->GetAsInteger(&frame_rate)) {
+    common::media::Rational frame_rate;
+    common::Value* frame_field = config_args->Find(FRAME_RATE_FIELD);
+    std::string frame_str;
+    if (frame_field && frame_field->GetAsBasicString(&frame_str) && common::ConvertFromString(frame_str, &frame_rate)) {
       econfig->SetFrameRate(frame_rate);
     }
 

@@ -21,6 +21,7 @@
 #include <gst/gstobject.h>
 
 #include <common/macros.h>
+#include <common/media/types.h>
 
 enum GstAutoplugSelectResult { GST_AUTOPLUG_SELECT_TRY, GST_AUTOPLUG_SELECT_EXPOSE, GST_AUTOPLUG_SELECT_SKIP };
 
@@ -324,10 +325,10 @@ class ElementMFXVpp : public ElementEx<ELEMENT_MFX_VPP> {
  public:
   typedef ElementEx<ELEMENT_MFX_VPP> base_class;
   using base_class::base_class;
-  void SetForceAspectRatio(bool ratio = true);  // Default: true
-  void SetWidth(gint width = 0);                // Range: 0 - 2147483647 Default: 0
-  void SetHeight(gint height = 0);              // Range: 0 - 2147483647 Default: 0
-  void SetFrameRate(int framerate = 0);         // Range: 0 - 2147483647 Default: 0
+  void SetForceAspectRatio(bool ratio = true);                  // Default: true
+  void SetWidth(gint width = 0);                                // Range: 0 - 2147483647 Default: 0
+  void SetHeight(gint height = 0);                              // Range: 0 - 2147483647 Default: 0
+  void SetFrameRate(const common::media::Rational& framerate);  // Range: 0 - 2147483647 Default: 0
   void SetDinterlaceMode(int mode);
 };
 

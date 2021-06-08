@@ -99,7 +99,10 @@ class ElementMFXH264Enc : public ElementEx<ELEMENT_MFX_H264_ENC> {
 };
 
 Element* build_video_scale(int width, int height, ILinker* linker, Element* link_to, element_id_t video_scale_id);
-Element* build_video_framerate(int framerate, ILinker* linker, Element* link_to, element_id_t video_framerate_id);
+Element* build_video_framerate(const common::media::Rational& framerate,
+                               ILinker* linker,
+                               Element* link_to,
+                               element_id_t video_framerate_id);
 
 template <typename T>
 T* make_video_encoder(element_id_t encoder_id) {

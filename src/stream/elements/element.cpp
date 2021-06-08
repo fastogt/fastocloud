@@ -354,8 +354,8 @@ void ElementMFXVpp::SetHeight(gint height) {
   SetProperty("height", height);
 }
 
-void ElementMFXVpp::SetFrameRate(int framerate) {
-  SetFractionProperty("framerate", framerate, 1);
+void ElementMFXVpp::SetFrameRate(const common::media::Rational& framerate) {
+  SetFractionProperty("framerate", framerate.num, framerate.den);
 }
 
 void ElementMFXVpp::SetDinterlaceMode(int mode) {
