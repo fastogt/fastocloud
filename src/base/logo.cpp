@@ -94,9 +94,9 @@ common::Optional<Logo> Logo::MakeLogo(common::HashValue* hash) {
   if (logo_pos_field && logo_pos_field->GetAsHash(&point_hash)) {
     common::Value* x_field = point_hash->Find(LOGO_POSITION_X_FIELD);
     common::Value* y_field = point_hash->Find(LOGO_POSITION_Y_FIELD);
-    int x = 0;
-    int y = 0;
-    if (x_field && x_field->GetAsInteger(&x) && y_field && y_field->GetAsInteger(&y)) {
+    int64_t x = 0;
+    int64_t y = 0;
+    if (x_field && x_field->GetAsLongInteger(&x) && y_field && y_field->GetAsLongInteger(&y)) {
       res.SetPosition(common::draw::Point(x, y));
     }
   }
@@ -106,9 +106,10 @@ common::Optional<Logo> Logo::MakeLogo(common::HashValue* hash) {
   if (logo_size_field && logo_size_field->GetAsHash(&size_hash)) {
     common::Value* width_field = size_hash->Find(LOGO_WIDTH_FIELD);
     common::Value* height_field = size_hash->Find(LOGO_HEIGHT_FIELD);
-    int width = 0;
-    int height = 0;
-    if (width_field && width_field->GetAsInteger(&width) && height_field && height_field->GetAsInteger(&height)) {
+    int64_t width = 0;
+    int64_t height = 0;
+    if (width_field && width_field->GetAsLongInteger(&width) && height_field &&
+        height_field->GetAsLongInteger(&height)) {
       res.SetSize(common::draw::Size(width, height));
     }
   }

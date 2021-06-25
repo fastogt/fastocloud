@@ -31,7 +31,7 @@ common::Value* MakeValueFromJson(json_object* obj) {
   } else if (obj_type == json_type_double) {
     return common::Value::CreateDoubleValue(json_object_get_double(obj));
   } else if (obj_type == json_type_int) {
-    return common::Value::CreateIntegerValue(json_object_get_int(obj));
+    return common::Value::CreateLongIntegerValue(json_object_get_int64(obj));
   } else if (obj_type == json_type_string) {
     return common::Value::CreateStringValueFromBasicString(json_object_get_string(obj));
   } else if (obj_type == json_type_object) {
@@ -50,7 +50,7 @@ common::Value* MakeValueFromJson(json_object* obj) {
           value = common::Value::CreateDoubleValue(json_object_get_double(val));
           break;
         case json_type_int:
-          value = common::Value::CreateIntegerValue(json_object_get_int(val));
+          value = common::Value::CreateLongIntegerValue(json_object_get_int64(val));
           break;
         case json_type_string:
           value = common::Value::CreateStringValueFromBasicString(json_object_get_string(val));
@@ -98,10 +98,10 @@ json_object* MakeJson(const common::Value* value) {
     if (value->GetAsDouble(&rdouble)) {
       return json_object_new_double(rdouble);
     }
-  } else if (type == common::Value::TYPE_INTEGER) {
-    int rint;
-    if (value->GetAsInteger(&rint)) {
-      return json_object_new_int(rint);
+  } else if (type == common::Value::TYPE_INTEGER64) {
+    int64_t rint;
+    if (value->GetAsLongInteger(&rint)) {
+      return json_object_new_int64(rint);
     }
   } else if (type == common::Value::TYPE_STRING) {
     common::Value::string_t rstring;

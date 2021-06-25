@@ -51,8 +51,8 @@ Validity validate_range(const common::Value* value, double min, double max, bool
 }
 
 Validity validate_range(const common::Value* value, int min, int max, bool is_fatal) {
-  int i;
-  if (value->GetAsInteger(&i) && i >= min && i <= max) {
+  int64_t i;
+  if (value->GetAsLongInteger(&i) && i >= min && i <= max) {
     return Validity::VALID;
   }
 
@@ -60,8 +60,8 @@ Validity validate_range(const common::Value* value, int min, int max, bool is_fa
 }
 
 Validity validate_is_positive(const common::Value* value, bool is_fatal) {
-  int i;
-  if (value->GetAsInteger(&i) && i >= 0) {
+  int64_t i;
+  if (value->GetAsLongInteger(&i) && i >= 0) {
     return Validity::VALID;
   }
 
@@ -275,8 +275,8 @@ Validity validate_audio_channels(const common::Value* value) {
 }
 
 Validity validate_audio_select(const common::Value* value) {
-  int ais;
-  if (!value->GetAsInteger(&ais)) {
+  int64_t ais;
+  if (!value->GetAsLongInteger(&ais)) {
     return Validity::INVALID;
   }
   return Validity::VALID;
@@ -310,8 +310,8 @@ Validity validate_x264_threads(const common::Value* value) {
 
 Validity validate_x264_tune(const common::Value* value) {
   static const int allowed_values[] = {0x0, 0x1, 0x2, 0x4};
-  int tune;
-  if (!value->GetAsInteger(&tune)) {
+  int64_t tune;
+  if (!value->GetAsLongInteger(&tune)) {
     return Validity::INVALID;
   }
 
@@ -341,8 +341,8 @@ Validity validate_x264_qp_max(const common::Value* value) {
 
 Validity validate_x264_pass(const common::Value* value) {
   static const int allowed_values[] = {0, 4, 5, 17, 18, 19};
-  int pass;
-  if (value->GetAsInteger(&pass)) {
+  int64_t pass;
+  if (value->GetAsLongInteger(&pass)) {
     return Validity::INVALID;
   }
 
@@ -366,8 +366,8 @@ Validity validate_vaapih264_keyframe_period(const common::Value* value) {
 
 Validity validate_vaapih264_tune(const common::Value* value) {
   static const int allowed_values[] = {0, 1, 3};
-  int tune;
-  if (value->GetAsInteger(&tune)) {
+  int64_t tune;
+  if (value->GetAsLongInteger(&tune)) {
     return Validity::INVALID;
   }
   for (const auto& i : allowed_values) {
@@ -396,8 +396,8 @@ Validity validate_vaapih264_min_qp(const common::Value* value) {
 
 Validity validate_vaapih264_rate_control(const common::Value* value) {
   static const int allowed_values[] = {1, 2, 4, 5};
-  int rate_control;
-  if (value->GetAsInteger(&rate_control)) {
+  int64_t rate_control;
+  if (value->GetAsLongInteger(&rate_control)) {
     return Validity::INVALID;
   }
 
