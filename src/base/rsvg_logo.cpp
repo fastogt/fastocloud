@@ -87,7 +87,7 @@ common::Optional<RSVGLogo> RSVGLogo::MakeLogo(common::HashValue* hash) {
     common::Value* y_field = point_hash->Find(LOGO_POSITION_Y_FIELD);
     int64_t x = 0;
     int64_t y = 0;
-    if (x_field && x_field->GetAsLongInteger(&x) && y_field && y_field->GetAsLongInteger(&y)) {
+    if (x_field && x_field->GetAsInteger64(&x) && y_field && y_field->GetAsInteger64(&y)) {
       res.SetPosition(common::draw::Point(x, y));
     }
   }
@@ -99,8 +99,7 @@ common::Optional<RSVGLogo> RSVGLogo::MakeLogo(common::HashValue* hash) {
     common::Value* height_field = size_hash->Find(LOGO_HEIGHT_FIELD);
     int64_t width = 0;
     int64_t height = 0;
-    if (width_field && width_field->GetAsLongInteger(&width) && height_field &&
-        height_field->GetAsLongInteger(&height)) {
+    if (width_field && width_field->GetAsInteger64(&width) && height_field && height_field->GetAsInteger64(&height)) {
       res.SetSize(common::draw::Size(width, height));
     }
   }

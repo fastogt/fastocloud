@@ -50,7 +50,7 @@ common::ErrnoError MakeStreamInfo(const StreamConfig& config_args,
 
   int64_t type;
   common::Value* type_field = config_args->Find(TYPE_FIELD);
-  if (!type_field || !type_field->GetAsLongInteger(&type)) {
+  if (!type_field || !type_field->GetAsInteger64(&type)) {
     return common::make_errno_error("Define " TYPE_FIELD " variable and make it valid", EAGAIN);
   }
   lsha.type = static_cast<fastotv::StreamType>(type);
@@ -73,7 +73,7 @@ common::ErrnoError MakeStreamInfo(const StreamConfig& config_args,
 
   int64_t llogs_level;
   common::Value* log_level_field = config_args->Find(LOG_LEVEL_FIELD);
-  if (!log_level_field || !log_level_field->GetAsLongInteger(&llogs_level)) {
+  if (!log_level_field || !log_level_field->GetAsInteger64(&llogs_level)) {
     llogs_level = common::logging::LOG_LEVEL_DEBUG;
   }
 

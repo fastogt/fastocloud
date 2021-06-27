@@ -40,7 +40,7 @@ void CheckAndSetValue(const StreamConfig& config, const std::string& name, video
 
   int64_t result;
   common::Value* setting = config->Find(name);
-  if (setting && setting->GetAsLongInteger(&result)) {
+  if (setting && setting->GetAsInteger64(&result)) {
     map->insert(std::make_pair(name, result));
   }
 }
@@ -164,7 +164,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
   int64_t type;
   common::Value* type_field = config_args->Find(TYPE_FIELD);
-  if (!type_field || !type_field->GetAsLongInteger(&type)) {
+  if (!type_field || !type_field->GetAsInteger64(&type)) {
     return common::make_error("Define " TYPE_FIELD " variable and make it valid");
   }
 
@@ -185,7 +185,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
   int64_t max_restart_attempts;
   common::Value* restart_attempts_field = config_args->Find(RESTART_ATTEMPTS_FIELD);
-  if (!restart_attempts_field || restart_attempts_field->GetAsLongInteger(&max_restart_attempts)) {
+  if (!restart_attempts_field || restart_attempts_field->GetAsInteger64(&max_restart_attempts)) {
     max_restart_attempts = kDefaultRestartAttempts;
   }
   CHECK(max_restart_attempts > 0) << "restart attempts must be grether than 0";
@@ -194,7 +194,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
   int64_t ttl_sec;
   common::Value* ttl_sec_field = config_args->Find(AUTO_EXIT_TIME_FIELD);
-  if (ttl_sec_field && ttl_sec_field->GetAsLongInteger(&ttl_sec)) {
+  if (ttl_sec_field && ttl_sec_field->GetAsInteger64(&ttl_sec)) {
     conf.SetTimeToLifeStream(ttl_sec);
   }
 
@@ -219,7 +219,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
   int64_t audio_select;
   common::Value* audio_select_field = config_args->Find(AUDIO_SELECT_FIELD);
-  if (audio_select_field && audio_select_field->GetAsLongInteger(&audio_select)) {
+  if (audio_select_field && audio_select_field->GetAsInteger64(&audio_select)) {
     aconf.SetAudioSelect(audio_select);
   }
 
@@ -310,7 +310,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
     int64_t audio_channels;
     common::Value* audio_channels_field = config_args->Find(AUDIO_CHANNELS_FIELD);
-    if (audio_channels_field && audio_channels_field->GetAsLongInteger(&audio_channels)) {
+    if (audio_channels_field && audio_channels_field->GetAsInteger64(&audio_channels)) {
       econfig->SetAudioChannelsCount(audio_channels);
     }
 
@@ -323,13 +323,13 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
     int64_t v_bitrate;
     common::Value* video_bitrate_field = config_args->Find(VIDEO_BIT_RATE_FIELD);
-    if (video_bitrate_field && video_bitrate_field->GetAsLongInteger(&v_bitrate)) {
+    if (video_bitrate_field && video_bitrate_field->GetAsInteger64(&v_bitrate)) {
       econfig->SetVideoBitrate(v_bitrate);
     }
 
     int64_t a_bitrate;
     common::Value* audio_bitrate_field = config_args->Find(AUDIO_BIT_RATE_FIELD);
-    if (audio_bitrate_field && audio_bitrate_field->GetAsLongInteger(&a_bitrate)) {
+    if (audio_bitrate_field && audio_bitrate_field->GetAsInteger64(&a_bitrate)) {
       econfig->SetAudioBitrate(a_bitrate);
     }
 
@@ -381,7 +381,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
 
     int64_t decl_vm;
     common::Value* decl_vm_field = config_args->Find(DECKLINK_VIDEO_MODE_FIELD);
-    if (decl_vm_field && decl_vm_field->GetAsLongInteger(&decl_vm)) {
+    if (decl_vm_field && decl_vm_field->GetAsInteger64(&decl_vm)) {
       econfig->SetDecklinkMode(decl_vm);
     }
 
@@ -423,7 +423,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
     streams::TimeshiftConfig* tconf = new streams::TimeshiftConfig(rel);
     int64_t timeshift_chunk_duration;
     common::Value* timeshift_chunk_duration_field = config_args->Find(TIMESHIFT_CHUNK_DURATION_FIELD);
-    if (timeshift_chunk_duration_field && timeshift_chunk_duration_field->GetAsLongInteger(&timeshift_chunk_duration)) {
+    if (timeshift_chunk_duration_field && timeshift_chunk_duration_field->GetAsInteger64(&timeshift_chunk_duration)) {
       tconf->SetTimeShiftChunkDuration(timeshift_chunk_duration);
     }
     CHECK(tconf->GetTimeShiftChunkDuration()) << "Avoid division by zero";

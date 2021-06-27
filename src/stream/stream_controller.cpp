@@ -57,14 +57,13 @@ TimeShiftInfo make_timeshift_info(const StreamConfig& config) {
 
   int64_t timeshift_chunk_life_time = 0;
   common::Value* timeshift_chunk_life_time_field = config->Find(TIMESHIFT_DIR_FIELD);
-  if (timeshift_chunk_life_time_field &&
-      timeshift_chunk_life_time_field->GetAsLongInteger(&timeshift_chunk_life_time)) {
+  if (timeshift_chunk_life_time_field && timeshift_chunk_life_time_field->GetAsInteger64(&timeshift_chunk_life_time)) {
     tinfo.timeshift_chunk_life_time = timeshift_chunk_life_time;
   }
 
   int64_t timeshift_delay = 0;
   common::Value* timeshift_delay_field = config->Find(TIMESHIFT_DELAY_FIELD);
-  if (timeshift_delay_field && timeshift_delay_field->GetAsLongInteger(&timeshift_delay)) {
+  if (timeshift_delay_field && timeshift_delay_field->GetAsInteger64(&timeshift_delay)) {
     tinfo.timeshift_delay = timeshift_delay;
   }
   return tinfo;
