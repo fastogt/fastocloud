@@ -357,7 +357,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
     common::HashValue* logo_hash = nullptr;
     common::Value* logo_field = config_args->Find(LOGO_FIELD);
     if (logo_field && logo_field->GetAsHash(&logo_hash)) {
-      auto logo = Logo::MakeLogo(logo_hash);
+      auto logo = fastotv::Logo::MakeLogo(logo_hash);
       if (logo) {
         econfig->SetLogo(*logo);
       }
@@ -366,7 +366,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
     common::HashValue* rsvg_logo_hash = nullptr;
     common::Value* rsvg_logo_field = config_args->Find(RSVG_LOGO_FIELD);
     if (rsvg_logo_field && rsvg_logo_field->GetAsHash(&rsvg_logo_hash)) {
-      auto logo = RSVGLogo::MakeLogo(rsvg_logo_hash);
+      auto logo = fastotv::RSVGLogo::MakeLogo(rsvg_logo_hash);
       if (logo) {
         econfig->SetRSVGLogo(*logo);
       }

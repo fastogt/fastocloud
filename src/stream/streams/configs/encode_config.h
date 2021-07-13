@@ -20,8 +20,8 @@
 #include "base/machine_learning/deep_learning.h"
 #include "base/machine_learning/deep_learning_overlay.h"
 #endif
-#include "base/logo.h"
-#include "base/rsvg_logo.h"
+#include <fastotv/types/logo.h>
+#include <fastotv/types/rsvg_logo.h>
 
 #include "stream/streams/configs/audio_video_config.h"
 
@@ -32,8 +32,8 @@ namespace streams {
 class EncodeConfig : public AudioVideoConfig {
  public:
   typedef AudioVideoConfig base_class;
-  typedef common::Optional<Logo> logo_t;
-  typedef common::Optional<RSVGLogo> rsvg_logo_t;
+  typedef common::Optional<fastotv::Logo> logo_t;
+  typedef common::Optional<fastotv::RSVGLogo> rsvg_logo_t;
 #if defined(MACHINE_LEARNING)
   typedef common::Optional<machine_learning::DeepLearning> deep_learning_t;
   typedef common::Optional<machine_learning::DeepLearningOverlay> deep_learning_overlay_t;

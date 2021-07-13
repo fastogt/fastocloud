@@ -21,8 +21,6 @@ SET(BASE_HEADERS
   ${CMAKE_SOURCE_DIR}/src/base/constants.h
   ${CMAKE_SOURCE_DIR}/src/base/gst_constants.h
   ${CMAKE_SOURCE_DIR}/src/base/config_fields.h
-  ${CMAKE_SOURCE_DIR}/src/base/logo.h
-  ${CMAKE_SOURCE_DIR}/src/base/rsvg_logo.h
   ${CMAKE_SOURCE_DIR}/src/base/inputs_outputs.h
   ${CMAKE_SOURCE_DIR}/src/base/channel_stats.h
   ${CMAKE_SOURCE_DIR}/src/base/stream_info.h
@@ -39,8 +37,6 @@ SET(BASE_SOURCES
   ${CMAKE_SOURCE_DIR}/src/base/constants.cpp
   ${CMAKE_SOURCE_DIR}/src/base/gst_constants.cpp
   ${CMAKE_SOURCE_DIR}/src/base/config_fields.cpp
-  ${CMAKE_SOURCE_DIR}/src/base/logo.cpp
-  ${CMAKE_SOURCE_DIR}/src/base/rsvg_logo.cpp
   ${CMAKE_SOURCE_DIR}/src/base/inputs_outputs.cpp
   ${CMAKE_SOURCE_DIR}/src/base/channel_stats.cpp
   ${CMAKE_SOURCE_DIR}/src/base/stream_info.cpp
