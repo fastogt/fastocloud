@@ -17,8 +17,8 @@ About FastoCloud
 * Temporary urls
 * HLS push
 * EPG scanning
-* Subtitles to text conversions
-* AD insertion
+* Subtitles to text conversions (ML version)
+* AD insertion (PRO version)
 * Logo overlay
 * Video effects
 * Relays
@@ -33,20 +33,19 @@ About FastoCloud
 * File Formats
 * Presets
 * Vods/Series server-side support
-* Pay per view channels
 * Channels on demand
 * HTTP Live Streaming (HLS) server-side support
-* Public API, client server communication via [JSON RPC](https://www.jsonrpc.org/specification)
-* Protocol gzip compression
-* Deep learning video analysis
-* Supported deep learning frameworks: 
+* Deep learning video analysis (ML version)
+* Supported deep learning frameworks: (ML version)
   * Tensorflow
   * NCSDK 
   * Caffe
-* ML Hardware: 
+* ML Hardware: (ML version)
   * Intel Movidius Neural Compute Stick
   * NVIDIA Jetson
 * Subscribers control
+* Blacklist IP
+* Tokens protected urls
 * [Amazon Kinesis Video Streams integration](https://aws.amazon.com/kinesis/video-streams)
 * [Admin panel](https://gitlab.com/fastogt/wsfastocloud)
 * [Docker Image](https://hub.docker.com/r/fastogt/fastocloud)
