@@ -78,12 +78,11 @@ Visit our site: [fastocloud.com](https://fastocloud.com)
 [Admin panel](https://gitlab.com/fastogt/wsfastocloud)
 ==========
 ### Dashboard page:
-![](https://fastocloud.com/panel_pro/api/static/images/dashboard.png)
+![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web.png)
+![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_live.png)
+![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_vod.png)
 
 [Demo Admin panel](https://ws.fastocloud.com)
-==========
-### Dashboard page:
-![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web.png)
 
 Contribute
 ==========
