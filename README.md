@@ -98,7 +98,7 @@ Build documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_en
 
 Install
 ========
-Install documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Install-package)
+Install documentation: [Install FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Install-package)
 
 License
 =======
