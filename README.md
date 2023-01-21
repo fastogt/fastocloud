@@ -90,7 +90,7 @@ Contributions are always welcome! Just try to follow our coding style: [FastoGT 
 
 Build
 ========
-Build documentation: [Build FastoCloud](https://gitlab.com/fastogt/fastocloud/fastocloud/-/wikis/Build)
+Build documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Install-package)
 
 License
 =======
