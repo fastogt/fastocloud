@@ -82,7 +82,7 @@ Visit our site: [fastocloud.com](https://fastocloud.com)
 ![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_live.png)
 ![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_vod.png)
 
-[Demo Admin panel](https://ws.fastocloud.com)
+[Demo Admin panel](https://ws.fastocloud.com) **Note: Press connect**
 
 Contribute
 ==========
