@@ -20,6 +20,8 @@
 * Subtitles to text conversions **[ML]**
 * AD insertion **[PRO]**
 * Logo overlay
+* Concat videos **[PRO]**
+* Merging videos (Green screen) **[PRO]**
 * Video effects
 * Relays
 * Timeshifts
