@@ -85,10 +85,6 @@ Visit our site: [fastocloud.com](https://fastocloud.com)
 ### Dashboard page:
 ![](https://gitlab.com/fastogt/wsfastocloud/raw/main/docs/images/fastocloud_one_web.png)
 
-### Realtime video analysis:
-![](https://fastocloud.com/panel_pro/api/static/images/ml.png)
-![](https://fastocloud.com/panel_pro/api/static/images/nano.png)
-
 Contribute
 ==========
 Contributions are always welcome! Just try to follow our coding style: [FastoGT Coding Style](https://github.com/fastogt/fastonosql/wiki/Coding-Style)
