@@ -89,12 +89,6 @@ Visit our site: [fastocloud.com](https://fastocloud.com)
 ![](https://fastocloud.com/panel_pro/api/static/images/ml.png)
 ![](https://fastocloud.com/panel_pro/api/static/images/nano.png)
 
-GStreamer Pipelines
-==========
-### [Encode (h264/aac)](https://fastocloud.com/panel_pro/api/static/examples/pipelines/encode.html)
-### [Relay](https://fastocloud.com/panel_pro/api/static/examples/pipelines/relay.html)
-### [Timeshift recorder](https://fastocloud.com/panel_pro/api/static/examples/pipelines/timeshift_rec.html)
-
 Contribute
 ==========
 Contributions are always welcome! Just try to follow our coding style: [FastoGT Coding Style](https://github.com/fastogt/fastonosql/wiki/Coding-Style)
