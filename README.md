@@ -1,4 +1,4 @@
-[FastoCloud Community Media Part](https://fastocloud.com/downloads.html)
+[FastoCloud Media Part Community Edition](https://fastocloud.com/downloads.html)
 ===================================
 [![Join the chat at https://discord.com/invite/cnUXsws](https://img.shields.io/discord/584773460585086977?label=discord)](https://discord.com/invite/cnUXsws)
 
