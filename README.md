@@ -9,16 +9,16 @@ About FastoCloud
 * GPU/CPU Encode/Decode/Post Processing
 * Stream statistics
 * CCTV
-* WebRTC to any output (PRO version)
-* Probe stream (PRO version)
+* WebRTC to any output **[PRO]**
+* Probe stream **[PRO]**
 * REST API
 * Adaptive hls streams
 * Load balancing
 * Temporary urls
 * HLS push
 * EPG scanning
-* Subtitles to text conversions (ML version)
-* AD insertion (PRO version)
+* Subtitles to text conversions **[ML]**
+* AD insertion **[PRO]**
 * Logo overlay
 * Video effects
 * Relays
@@ -35,12 +35,12 @@ About FastoCloud
 * Vods/Series server-side support
 * Channels on demand
 * HTTP Live Streaming (HLS) server-side support
-* Deep learning video analysis (ML version)
-* Supported deep learning frameworks: (ML version)
+* Deep learning video analysis **[ML]**
+* Supported deep learning frameworks: **[ML]**
   * Tensorflow
   * NCSDK 
   * Caffe
-* ML Hardware: (ML version)
+* ML Hardware: **[ML]**
   * Intel Movidius Neural Compute Stick
   * NVIDIA Jetson
 * Subscribers control
