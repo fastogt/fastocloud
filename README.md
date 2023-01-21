@@ -1,8 +1,8 @@
 [FastoCloud Community Media Part](https://fastocloud.com/downloads.html)
 ===================================
 [![Join the chat at https://discord.com/invite/cnUXsws](https://img.shields.io/discord/584773460585086977?label=discord)](https://discord.com/invite/cnUXsws)
-   
-About FastoCloud
+
+[About FastoCloud](https://github.com/fastogt/fastocloud_docs/wiki)
 ===============
 ### Features:
 * Cross-platform (Linux, MacOSX, FreeBSD, Raspbian/Armbian, Windows)
@@ -108,10 +108,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-Work with US
-=======
-
-[IPTV presentation](https://fastogt.com/static/projects/fastocloud_iptv.pdf)
-
-[MEDIA presentation](https://fastogt.com/static/projects/fastocloud_for.pdf)
