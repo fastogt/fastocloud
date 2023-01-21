@@ -11,7 +11,7 @@
 * CCTV
 * WebRTC to any output **[PRO]**
 * Probe stream **[PRO]**
-* REST API
+* [REST API](https://fastogt.stoplight.io/docs/fastocloud-api/6dbac8c0c0a0f-fasto-cloud-community-pro-ml-versions)
 * Adaptive hls streams
 * Load balancing
 * Temporary urls
