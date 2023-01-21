@@ -8,7 +8,7 @@
 * Cross-platform (Linux, MacOSX, FreeBSD, Raspbian/Armbian, Windows)
 * GPU/CPU Encode/Decode/Post Processing
 * Stream statistics
-* CCTV
+* RTSP/RTMP inputs
 * WebRTC to any output **[PRO]**
 * Probe stream **[PRO]**
 * [REST API](https://fastogt.stoplight.io/docs/fastocloud-api/6dbac8c0c0a0f-fasto-cloud-community-pro-ml-versions)
@@ -31,7 +31,7 @@
 * Mosaic
 * Many Outputs
 * CDN internal nodes **[PRO]**
-* Physical Inputs (IP Camera, DVB-T/C/S, ATSC, ISDB-T and DTMB)
+* Physical Inputs (IP Camera, DVB-T/C/S, ATSC, USB, Screen, ISDB-T and DTMB)
 * Streaming Protocols
 * File Formats
 * Presets
