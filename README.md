@@ -107,7 +107,7 @@ Build documentation: [Build FastoCloud](https://gitlab.com/fastogt/fastocloud/fa
 License
 =======
 
-Copyright (C) 2014-2022 FastoGT(https://fastogt.com)
+Copyright (C) 2014-2023 FastoGT(https://fastogt.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 as 
