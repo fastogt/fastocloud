@@ -33,8 +33,6 @@
 * Many Inputs/Outputs
 * CDN internal nodes **[PRO]**
 * Physical Inputs (IP Camera, DVB-T/C/S, ATSC, USB, Screen, ISDB-T and DTMB)
-* Streaming Protocols
-* File Formats
 * Presets
 * Changing inputs in realtime **[PRO]**
 * Scaning folders for media content **[PRO]**
