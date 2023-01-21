@@ -7,28 +7,29 @@
 ### Features:
 * Cross-platform (Linux, MacOSX, FreeBSD, Raspbian/Armbian, Windows)
 * GPU/CPU Encode/Decode/Post Processing
-* Stream statistics
-* RTSP/RTMP and many other inputs
-* Firebase/Google/Azure storages outputs **[PRO]**
-* WebRTC to any output **[PRO]**
+* Restreaming
+* Stream/Server statistics
+* RTSP/RTMP/HLS/DASH and many other inputs
+* Firebase/Google/Azure cloud storages outputs **[PRO]**
+* WEBRTC to any output **[PRO]**
+* Any inputs to WEBRTC output **[PRO]**
 * Probe stream **[PRO]**
 * [REST API](https://fastogt.stoplight.io/docs/fastocloud-api/6dbac8c0c0a0f-fasto-cloud-community-pro-ml-versions)
 * Adaptive hls streams
-* Load balancing [PRO]
-* Temporary urls
-* HLS push
-* EPG scanning
+* Load balancing **[PRO]**
+* Embedded urls
+* HLS pull/push
 * Subtitles to text conversions **[ML]**
 * AD insertion **[PRO]**
 * Logo overlay
 * Concat videos **[PRO]**
-* Merging videos (Green screen) **[PRO]**
+* Merging videos (Green screen, Webpage etc) **[PRO]**
 * Video effects
-* Relays
+* Relays audio/video part of stream
 * Timeshifts
 * Catchups
 * Playlists
-* Restream/Transcode from online streaming services like YouTube, Twitch
+* Restream/Transcode from online streaming services like YouTube, Twitch, etc
 * Mosaic
 * Many Inputs/Outputs
 * CDN internal nodes **[PRO]**
@@ -36,7 +37,6 @@
 * Presets
 * Changing inputs in realtime **[PRO]**
 * Scaning folders for media content **[PRO]**
-* Vods/Series server-side support
 * Channels on demand
 * HTTP Live Streaming (HLS) server-side support
 * Deep learning video analysis **[ML]**
@@ -49,7 +49,6 @@
   * NVIDIA Jetson, Tesla T4
 * ML notifications (Face detection, YOLO, Plate detection, etc) **[ML]**
 * NVIDIA Maxine/Deepstream  **[ML]**
-* Subscribers control
 * Blacklist IP
 * Tokens protected urls
 * [Amazon Kinesis Video Streams integration](https://aws.amazon.com/kinesis/video-streams)
@@ -68,7 +67,6 @@
 * Video effects in streams or files
 * Insert AD into stream
 * Subtitles to text conversions and vise versa
-* EPG scanning
 * Streams find bot, with quality analysis, test m3u file streams
 * Record and broadcast video from cameras
 * Detect objects in real-time video and send email/push notifications
