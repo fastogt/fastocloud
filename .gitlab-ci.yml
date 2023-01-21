@@ -1,0 +1,22 @@
+image: debian:buster-slim
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+
+before_script:
+  - cd build/env
+  - ./fast_build_fastocloud_env_for_dev.sh
+  - cd ../
+
+build:
+  stage: build
+
+  script:
+    - ./build.py --release
+
+  tags:
+    - fastogt
+
