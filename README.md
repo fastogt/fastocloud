@@ -94,7 +94,11 @@ Contributions are always welcome! Just try to follow our coding style: [FastoGT 
 
 Build
 ========
-Build documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Install-package)
+Build documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Build-service-from-sources)
+
+Install
+========
+Install documentation: [Build FastoCloud](https://github.com/fastogt/fastocloud_env/wiki/Install-package)
 
 License
 =======
