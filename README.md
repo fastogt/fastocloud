@@ -13,7 +13,7 @@
 * Probe stream **[PRO]**
 * [REST API](https://fastogt.stoplight.io/docs/fastocloud-api/6dbac8c0c0a0f-fasto-cloud-community-pro-ml-versions)
 * Adaptive hls streams
-* Load balancing
+* Load balancing [PRO]
 * Temporary urls
 * HLS push
 * EPG scanning
@@ -28,10 +28,13 @@
 * Restream/Transcode from online streaming services like YouTube, Twitch
 * Mosaic
 * Many Outputs
+* CDN internal nodes **[PRO]**
 * Physical Inputs (IP Camera, DVB-T/C/S, ATSC, ISDB-T and DTMB)
 * Streaming Protocols
 * File Formats
 * Presets
+* Changing inputs in realtime **[PRO]**
+* Scaning folders for media content **[PRO]**
 * Vods/Series server-side support
 * Channels on demand
 * HTTP Live Streaming (HLS) server-side support
@@ -42,7 +45,9 @@
   * Caffe
 * ML Hardware: **[ML]**
   * Intel Movidius Neural Compute Stick
-  * NVIDIA Jetson
+  * NVIDIA Jetson, Tesla T4
+* ML notifications (Face detection, YOLO, Plate detection, etc) **[ML]**
+* NVIDIA Maxine/Deepstream  **[ML]**
 * Subscribers control
 * Blacklist IP
 * Tokens protected urls
