@@ -9,7 +9,7 @@
 * GPU/CPU Encode/Decode/Post Processing
 * Restreaming
 * Stream/Server statistics
-* RTSP/RTMP/HLS/DASH and many other inputs
+* RTSP/RTMP/HLS/DASH and many other different input/output protocol
 * Firebase/Google/Azure cloud storages outputs **[PRO]**
 * WEBRTC to any output **[PRO]**
 * Any inputs to WEBRTC output **[PRO]**
@@ -31,7 +31,6 @@
 * Playlists
 * Restream/Transcode from online streaming services like YouTube, Twitch, etc
 * Mosaic
-* Many Inputs/Outputs
 * CDN internal nodes **[PRO]**
 * Physical Inputs (IP Camera, DVB-T/C/S, ATSC, USB, Screen, ISDB-T and DTMB)
 * Presets
