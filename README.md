@@ -9,7 +9,7 @@
 * GPU/CPU Encode/Decode/Post Processing
 * Restreaming
 * Stream/Server statistics
-* RTSP/RTMP/HLS/DASH and many other different input/output protocol
+* RTSP/RTMP/HLS/DASH and many other different input/output protocols
 * Firebase/Google/Azure cloud storages outputs **[PRO]**
 * WEBRTC to any output **[PRO]**
 * Any inputs to WEBRTC output **[PRO]**
