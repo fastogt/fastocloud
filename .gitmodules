@@ -1,6 +1,6 @@
 [submodule "cmake"]
 	path = cmake
-	url = git@github.com:fastogt/cmake.git
+	url = https://github.com/fastogt/cmake
 [submodule "build/env"]
 	path = build/env
-	url = git@github.com:fastogt/fastocloud_env.git
+	url = https://github.com/fastogt/fastocloud_env.git
