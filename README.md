@@ -19,7 +19,7 @@
 * Load balancing **[PRO]**
 * Embedded urls
 * HLS pull/push
-* Subtitles to text conversions **[ML]**
+* Audio to text conversions **[ML]**
 * AD insertion **[PRO]**
 * Logo overlay
 * Concat videos **[PRO]**
