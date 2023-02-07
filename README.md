@@ -23,6 +23,7 @@
 * AD insertion **[PRO]**
 * Logo overlay
 * Concat videos **[PRO]**
+* NDI Input/Output **[PRO]**
 * Merging videos (Green screen, Webpage etc) **[PRO]**
 * Video effects
 * Relays audio/video part of stream
