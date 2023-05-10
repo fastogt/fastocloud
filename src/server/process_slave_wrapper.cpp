@@ -60,10 +60,12 @@ namespace {
 
 common::Error PostHttpOrHttpsFile(const common::file_system::ascii_file_string_path& file_path,
                                   const common::uri::GURL& url) {
+  struct timeval tv = {1, 0};
+  const common::http::headers_t extra = {};
   if (url.SchemeIs("http")) {
-    return common::net::PostHttpFile(file_path, url);
+    return common::net::PostHttpFile(file_path, url, extra, &tv);
   }
-  return common::net::PostHttpsFile(file_path, url);
+  return common::net::PostHttpsFile(file_path, url, extra, &tv);
 }
 
 common::Optional<common::file_system::ascii_file_string_path> MakeStreamConfigJsonPath(
