@@ -51,6 +51,7 @@
 * NVIDIA Maxine/Deepstream  **[ML]**
 * Blacklist IP
 * Tokens protected urls
+* DRM **[PRO]**
 * [Amazon Kinesis Video Streams integration](https://aws.amazon.com/kinesis/video-streams)
 * [Admin panel](https://gitlab.com/fastogt/wsfastocloud)
 * [Docker Image](https://hub.docker.com/r/fastogt/fastocloud)
