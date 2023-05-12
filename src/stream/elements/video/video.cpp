@@ -88,10 +88,6 @@ Element* make_video_deinterlace(const std::string& deinterlace, const std::strin
   return nullptr;
 }
 
-gboolean ElementCairoOverlay::RegisterDrawCallback(draw_callback_t cb, gpointer user_data) {
-  return RegisterCallback("draw", G_CALLBACK(cb), user_data);
-}
-
 }  // namespace video
 }  // namespace elements
 }  // namespace stream

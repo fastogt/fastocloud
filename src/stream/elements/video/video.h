@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include <cairo.h>  // for cairo_t
 #include <string>   // for string
 
 #include <common/media/types.h>
@@ -86,17 +85,6 @@ typedef ElementEx<ELEMENT_IMAGE_FREEZE> ElementImageFreeze;
 typedef ElementEx<ELEMENT_VIDEO_BOX> ElementVideoBox;
 typedef ElementEx<ELEMENT_VIDEO_MIXER> ElementVideoMixer;
 typedef ElementEx<ELEMENT_VIDEO_CROP> ElementVideoCrop;
-
-class ElementCairoOverlay : public ElementEx<ELEMENT_CAIRO_OVERLAY> {
- public:
-  typedef ElementEx<ELEMENT_CAIRO_OVERLAY> base_class;
-  using base_class::base_class;
-
-  typedef void (
-      *draw_callback_t)(GstElement* overlay, cairo_t* cr, guint64 timestamp, guint64 duration, gpointer user_data);
-
-  gboolean RegisterDrawCallback(draw_callback_t cb, gpointer user_data) WARN_UNUSED_RESULT;
-};
 
 class ElementTextOverlay : public ElementEx<ELEMENT_TEXT_OVERLAY> {
  public:

@@ -45,7 +45,6 @@
 
 #define VIDEOMIXER_NAME_1U "videomixer_%lu"
 #define INTERLIVE_NAME_1U "interlive_%lu"
-#define CAIRO_NAME_1U "cairo_%lu"
 #define TEXT_OVERLAY_NAME_1U "text_%lu"
 #define QUEUE2_NAME_1U "queue2_%lu"
 
