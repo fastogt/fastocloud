@@ -7,6 +7,9 @@
 ### Features:
 * Cross-platform (Linux, MacOSX, FreeBSD, Raspbian/Armbian, Windows)
 * GPU/CPU Encode/Decode/Post Processing
+  * Intel QuickSync
+  * Nvidia NVENC
+  * AMD
 * Restreaming
 * Stream/Server statistics
 * RTSP/RTMP/HLS/DASH and many other different input/output protocols
