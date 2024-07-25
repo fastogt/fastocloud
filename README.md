@@ -1,6 +1,6 @@
 [FastoCloud Media](https://fastocloud.com/downloads.html)
 ===================================
-[![Join the chat at https://discord.com/invite/cnUXsws](https://img.shields.io/discord/584773460585086977?label=discord)](https://discord.gg/WAJ9gYRu)
+[![Join the chat at https://discord.com/invite/cnUXsws](https://img.shields.io/discord/584773460585086977?label=discord)](https://discord.gg/Fxbfx3d5dV)
 
 [About FastoCloud](https://github.com/fastogt/fastocloud_docs/wiki)
 ===============
