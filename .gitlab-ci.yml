@@ -1,4 +1,4 @@
-image: debian:buster-slim
+image: debian:bullseye-slim
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -15,7 +15,7 @@ build:
   stage: build
 
   script:
-    - ./build.py --release
+    - ./build.py release
 
   tags:
     - fastogt
