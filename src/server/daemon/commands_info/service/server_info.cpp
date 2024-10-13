@@ -26,6 +26,9 @@
 #define CODS_HOST_FIELD "cods_host"
 #define EXPIRATION_TIME_FIELD "expiration_time"
 
+#define VSYSTEM_FIELD "vsystem"
+#define VROLE_FIELD "vrole"
+
 #define HLS_DIR_FIELD "hls_dir"
 #define VODS_DIR_FIELD "vods_dir"
 #define CODS_DIR_FIELD "cods_dir"
@@ -148,7 +151,9 @@ FullServiceInfo::FullServiceInfo()
       http_host_(),
       project_(PROJECT_NAME_LOWERCASE),
       proj_ver_(PROJECT_VERSION_HUMAN),
-      os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()) {}
+      os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
+      vsystem_(),
+      vrole_() {}
 
 FullServiceInfo::FullServiceInfo(const host_t& http_host,
                                  const host_t& vods_host,
@@ -176,7 +181,9 @@ FullServiceInfo::FullServiceInfo(const host_t& http_host,
       data_dir_(data_dir),
       project_(PROJECT_NAME_LOWERCASE),
       proj_ver_(PROJECT_VERSION_HUMAN),
-      os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()) {}
+      os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
+      vsystem_(),
+      vrole_() {}
 
 FullServiceInfo::host_t FullServiceInfo::GetHttpHost() const {
   return http_host_;
@@ -196,6 +203,14 @@ std::string FullServiceInfo::GetProject() const {
 
 std::string FullServiceInfo::GetProjectVersion() const {
   return proj_ver_;
+}
+
+std::string FullServiceInfo::GetVsystem() const {
+  return vsystem_;
+}
+
+std::string FullServiceInfo::GetVrole() const {
+  return vrole_;
 }
 
 common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
@@ -241,6 +256,8 @@ common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
   ignore_result(GetStringField(serialized, DATA_DIR_FIELD, &inf.data_dir_));
   ignore_result(GetStringField(serialized, PROJECT_FIELD, &inf.project_));
   ignore_result(GetStringField(serialized, VERSION_FIELD, &inf.proj_ver_));
+  ignore_result(GetStringField(serialized, VSYSTEM_FIELD, &inf.vsystem_));
+  ignore_result(GetStringField(serialized, VROLE_FIELD, &inf.vrole_));
 
   *this = inf;
   return common::Error();
@@ -269,6 +286,8 @@ common::Error FullServiceInfo::SerializeFields(json_object* out) const {
   ignore_result(SetStringField(out, VERSION_FIELD, proj_ver_));
   ignore_result(SetStringField(out, PROJECT_FIELD, project_));
   ignore_result(SetObjectField(out, OS_FIELD, jos));
+  ignore_result(SetStringField(out, VSYSTEM_FIELD, vsystem_));
+  ignore_result(SetStringField(out, VROLE_FIELD, vrole_));
   return base_class::SerializeFields(out);
 }
 

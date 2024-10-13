@@ -96,6 +96,9 @@ class FullServiceInfo : public ServerInfo {
   std::string GetProject() const;
   std::string GetProjectVersion() const;
 
+  std::string GetVsystem() const;
+  std::string GetVrole() const;
+
  protected:
   common::Error DoDeSerialize(json_object* serialized) override;
   common::Error SerializeFields(json_object* out) const override;
@@ -117,6 +120,9 @@ class FullServiceInfo : public ServerInfo {
   std::string project_;
   std::string proj_ver_;
   fastotv::commands_info::OperationSystemInfo os_;
+
+  std::string vsystem_;
+  std::string vrole_;
 };
 
 }  // namespace service
