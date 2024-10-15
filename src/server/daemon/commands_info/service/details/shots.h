@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include <common/error.h>
 
 namespace fastocloud {

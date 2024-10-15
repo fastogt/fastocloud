@@ -16,6 +16,8 @@
 
 #include <string>
 
+#include <common/system_info/system_info.h>
+
 #define ONLINE_USERS_FIELD "online_users"
 
 #define OS_FIELD "os"
@@ -152,8 +154,8 @@ FullServiceInfo::FullServiceInfo()
       project_(PROJECT_NAME_LOWERCASE),
       proj_ver_(PROJECT_VERSION_HUMAN),
       os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
-      vsystem_(),
-      vrole_() {}
+      vsystem_(common::system_info::VirtualizationSystem()),
+      vrole_(common::system_info::VirtualizationRole()) {}
 
 FullServiceInfo::FullServiceInfo(const host_t& http_host,
                                  const host_t& vods_host,
@@ -182,8 +184,8 @@ FullServiceInfo::FullServiceInfo(const host_t& http_host,
       project_(PROJECT_NAME_LOWERCASE),
       proj_ver_(PROJECT_VERSION_HUMAN),
       os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
-      vsystem_(),
-      vrole_() {}
+      vsystem_(common::system_info::VirtualizationSystem()),
+      vrole_(common::system_info::VirtualizationRole()) {}
 
 FullServiceInfo::host_t FullServiceInfo::GetHttpHost() const {
   return http_host_;
