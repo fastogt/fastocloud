@@ -41,7 +41,7 @@
 * Physical Inputs (IP Camera, DVB-T/C/S, ATSC, USB, Screen, ISDB-T and DTMB)
 * Presets
 * Changing inputs in realtime **[PRO]**
-* Scaning folders for media content **[PRO]**
+* Scanning folders for media content **[PRO]**
 * Channels on demand
 * HTTP Live Streaming (HLS) server-side support
 * Deep learning video analysis **[ML]**
