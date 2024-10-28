@@ -1,0 +1,50 @@
+image: debian:bullseye-slim
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+  - build_package
+
+before_script:
+  - cd build/env
+  - ./fast_build_fastocloud_env_for_package.sh
+  - cd ../
+
+build:
+  stage: build
+
+  script:
+    - ./build.py release
+
+  tags:
+    - fastogt
+
+build_package:
+  stage: build_package
+
+  script:
+    - mkdir build_releases/
+    - ./build.py release
+
+    - cd build_linux/build_cmake_release/ && cpack -G DEB
+    - cd ../../
+    - mv build_linux/build_cmake_release/*-x86_64-*.deb build_releases/
+
+    - cd build_linux/build_cmake_release/ && cpack -G RPM
+    - cd ../../
+    - mv build_linux/build_cmake_release/*-x86_64-*.rpm build_releases/
+
+    - cd build_linux/build_cmake_release/ && cpack -G TGZ
+    - cd ../../
+    - mv build_linux/build_cmake_release/*-x86_64-*.tar.gz build_releases/
+
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/build/build_releases/*.deb
+      - $CI_PROJECT_DIR/build/build_releases/*.rpm
+      - $CI_PROJECT_DIR/build/build_releases/*.tar.gz
+
+  tags:
+    - fastogt

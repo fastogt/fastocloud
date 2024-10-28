@@ -1,0 +1,74 @@
+1.4.4 / October 16, 2024
+[Alexandr Topilski]
+- VSystem, vrole stats
+
+1.4.3 / February 4, 2023
+[Alexandr Topilski]
+- Stabilization
+
+1.4.2 / October 20, 2022
+[Alexandr Topilski]
+- Review http post routes
+- Reload command
+- Get hash route
+
+1.4.1 / April 11, 2022
+[Alexandr Topilski]
+- Pads reviews
+
+1.4.0 / February 23, 2022
+[Alexandr Topilski]
+- More common code with PRO
+
+1.4.0 / February 21, 2022
+[Alexandr Topilski]
+- FastoTV types integration
+- Copyrights
+
+1.3.2 / June 5, 2021
+[Alexandr Topilski]
+- Stabilization
+
+1.3.1 / March 27, 2021
+[Alexandr Topilski]
+- Bug fixes
+
+1.3.0 / March 27, 2021
+[Alexandr Topilski]
+- License key review
+- CI/CD
+- Docker
+
+1.2.5 / March 13, 2021
+[Alexandr Topilski]
+- Ini section
+
+1.2.4 / January 30, 2021
+[Alexandr Topilski]
+- PyFastoStream integration
+
+1.2.3 / January 16, 2021
+[Alexandr Topilski]
+- Kill stream command
+
+1.2.2 / January 2, 2021
+[Alexandr Topilski]
+- Bitrates fixes
+
+1.2.1 / December 18, 2020
+[Alexandr Topilski]
+- Stabilization
+- Back to opensource
+
+1.1.1 / June 20, 2020
+[Alexandr Topilski]
+- DVB source
+- Stabilization
+
+1.1.0 / April 21, 2020
+[Alexandr Topilski]
+- Otional fields
+
+1.0.0 / March 20, 2020
+[Alexandr Topilski]
+- Init release
