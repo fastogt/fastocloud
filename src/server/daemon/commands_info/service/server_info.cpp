@@ -37,6 +37,7 @@
 #define TIMESHIFTS_DIR_FIELD "timeshifts_dir"
 #define FEEDBACK_DIR_FIELD "feedback_dir"
 #define DATA_DIR_FIELD "data_dir"
+#define PROXY_DIR_FIELD "proxy_dir"
 
 #define ONLINE_USERS_DAEMON_FIELD "daemon"
 #define ONLINE_USERS_HTTP_FIELD "http"
@@ -256,6 +257,7 @@ common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
   ignore_result(GetStringField(serialized, TIMESHIFTS_DIR_FIELD, &inf.timeshifts_dir_));
   ignore_result(GetStringField(serialized, FEEDBACK_DIR_FIELD, &inf.feedback_dir_));
   ignore_result(GetStringField(serialized, DATA_DIR_FIELD, &inf.data_dir_));
+  ignore_result(GetStringField(serialized, PROXY_DIR_FIELD, &inf.proxy_dir_));
   ignore_result(GetStringField(serialized, PROJECT_FIELD, &inf.project_));
   ignore_result(GetStringField(serialized, VERSION_FIELD, &inf.proj_ver_));
   ignore_result(GetStringField(serialized, VSYSTEM_FIELD, &inf.vsystem_));
@@ -285,6 +287,7 @@ common::Error FullServiceInfo::SerializeFields(json_object* out) const {
   ignore_result(SetStringField(out, TIMESHIFTS_DIR_FIELD, timeshifts_dir_));
   ignore_result(SetStringField(out, FEEDBACK_DIR_FIELD, feedback_dir_));
   ignore_result(SetStringField(out, DATA_DIR_FIELD, data_dir_));
+  ignore_result(SetStringField(out, PROXY_DIR_FIELD, proxy_dir_));
   ignore_result(SetStringField(out, VERSION_FIELD, proj_ver_));
   ignore_result(SetStringField(out, PROJECT_FIELD, project_));
   ignore_result(SetObjectField(out, OS_FIELD, jos));

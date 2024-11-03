@@ -185,7 +185,10 @@ SysinfoShot GetMachineSysinfoShot() {
     return inf;
   }
 
-  memcpy(&inf.loads, &info.loads, sizeof(unsigned long) * SIZEOFMASS(info.loads));
+  static const double f_load = (1 << SI_LOAD_SHIFT);
+  inf.loads[0] = double(info.loads[0]) / f_load;
+  inf.loads[1] = double(info.loads[1]) / f_load;
+  inf.loads[2] = double(info.loads[2]) / f_load;
   inf.uptime = info.uptime;
   return inf;
 #elif defined(OS_MACOSX) || defined(OS_FREEBSD)

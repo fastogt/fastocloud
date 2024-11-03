@@ -60,7 +60,7 @@ NetShot GetMachineNetShot();
 struct SysinfoShot {
   SysinfoShot();
 
-  unsigned long loads[3];
+  double loads[3];
   time_t uptime;
 };
 
