@@ -1440,7 +1440,7 @@ std::string ProcessSlaveWrapper::MakeServiceStats(common::Optional<common::time6
   service::MemoryShot mem_shot = service::GetMachineMemoryShot();
   service::HddShot hdd_shot = service::GetMachineHddShot();
   service::SysinfoShot sshot = service::GetMachineSysinfoShot();
-  std::string uptime_str = common::MemSPrintf("%lu %lu %lu", sshot.loads[0], sshot.loads[1], sshot.loads[2]);
+  std::string uptime_str = common::MemSPrintf("%.2f %.2f %.2f", sshot.loads[0], sshot.loads[1], sshot.loads[2]);
   fastotv::timestamp_t current_time = common::time::current_utc_mstime();
   fastotv::timestamp_t ts_diff = (current_time - node_stats_->timestamp) / 1000;
   if (ts_diff == 0) {
