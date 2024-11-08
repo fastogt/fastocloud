@@ -8,7 +8,7 @@ class BuildRequest(build_utils.BuildRequest):
         build_utils.BuildRequest.__init__(self, platform, arch_name, dir_path, prefix_path)
 
     def build(self, build_type):
-        cmake_flags = []
+        cmake_flags = ['-DCPACK_SUPPORT=ON']
         self._build_via_cmake_double(cmake_flags, build_type)
 
 
