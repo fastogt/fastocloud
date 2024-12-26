@@ -14,10 +14,10 @@
 
 #include "utils/m3u8_reader.h"
 
+#include <common/convert2string.h>
+
 #include <regex>
 #include <string>
-
-#include <common/convert2string.h>
 
 #define CHUNK_EXT ".ts"
 #define CHUNK_EXT_RE "\\" CHUNK_EXT

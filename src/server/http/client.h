@@ -21,18 +21,18 @@ typedef struct ssl_st SSL;
 namespace fastocloud {
 namespace server {
 
-class HttpClient : public common::libev::http::HttpClient {
+class HttpClient : public common::libev::http::HttpServerClient {
  public:
-  typedef common::libev::http::HttpClient base_class;
+  typedef common::libev::http::HttpServerClient base_class;
 
   HttpClient(common::libev::IoLoop* server, const common::net::socket_info& info);
 
   const char* ClassName() const override;
 };
 
-class HttpsClient : public common::libev::http::HttpClient {
+class HttpsClient : public common::libev::http::HttpServerClient {
  public:
-  typedef common::libev::http::HttpClient base_class;
+  typedef common::libev::http::HttpServerClient base_class;
 
   HttpsClient(common::libev::IoLoop* server, const common::net::socket_info& info, SSL* ssl);
 

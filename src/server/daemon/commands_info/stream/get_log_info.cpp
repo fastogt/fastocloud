@@ -16,21 +16,16 @@
 
 #include <string>
 
-#define PATH_FIELD "path"
 #define FEEDBACK_DIR_FIELD "feedback_directory"
 
 namespace fastocloud {
 namespace server {
 namespace stream {
 
-GetLogInfo::GetLogInfo() : base_class(), feedback_dir_(), path_() {}
+GetLogInfo::GetLogInfo() : base_class(), feedback_dir_() {}
 
-GetLogInfo::GetLogInfo(const fastotv::stream_id_t& stream_id, const std::string& feedback_dir, const url_t& path)
-    : base_class(stream_id), feedback_dir_(feedback_dir), path_(path) {}
-
-GetLogInfo::url_t GetLogInfo::GetLogPath() const {
-  return path_;
-}
+GetLogInfo::GetLogInfo(const fastotv::stream_id_t& stream_id, const std::string& feedback_dir)
+    : base_class(stream_id), feedback_dir_(feedback_dir) {}
 
 std::string GetLogInfo::GetFeedbackDir() const {
   return feedback_dir_;
@@ -50,20 +45,11 @@ common::Error GetLogInfo::DoDeSerialize(json_object* serialized) {
   }
   inf.feedback_dir_ = feedback_dir;
 
-  std::string path;
-  err = GetStringField(serialized, PATH_FIELD, &path);
-  if (err) {
-    return err;
-  }
-  inf.path_ = url_t(path);
-
   *this = inf;
   return common::Error();
 }
 
 common::Error GetLogInfo::SerializeFields(json_object* out) const {
-  const std::string path_str = path_.spec();
-  ignore_result(SetStringField(out, PATH_FIELD, path_str));
   ignore_result(SetStringField(out, FEEDBACK_DIR_FIELD, feedback_dir_));
   return base_class::SerializeFields(out);
 }

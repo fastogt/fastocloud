@@ -56,17 +56,13 @@
 #undef SetPort
 #endif
 
+#define API_KEY_PARAM "API-KEY"
+
+#define WS_UPDATES "updates"
+
 namespace {
 
-common::Error PostHttpOrHttpsFile(const common::file_system::ascii_file_string_path& file_path,
-                                  const common::uri::GURL& url) {
-  struct timeval tv = {1, 0};
-  const common::http::headers_t extra = {};
-  if (url.SchemeIs("http")) {
-    return common::net::PostHttpFile(file_path, url, extra, &tv);
-  }
-  return common::net::PostHttpsFile(file_path, url, extra, &tv);
-}
+const auto kClosedDaemon = common::make_errno_error("Connection closed", EAGAIN);
 
 common::Optional<common::file_system::ascii_file_string_path> MakeStreamConfigJsonPath(
     const std::string& feedback_dir) {
@@ -90,22 +86,42 @@ namespace fastocloud {
 namespace server {
 namespace {
 template <typename T>
-common::ErrnoError ParseClientRequest(ProtocoledDaemonClient* dclient,
-                                      const fastotv::protocol::request_t* req,
-                                      common::serializer::JsonSerializer<T>* result,
-                                      bool access = true) {
-  if (!req->params || !dclient || !req || !result) {
+common::ErrnoError ParsePostClientRequest(ProtocoledDaemonClient* dclient,
+                                          const common::http::HttpRequest& req,
+                                          common::serializer::JsonSerializer<T>* result,
+                                          bool access = true) {
+  if (!dclient || !result) {
     return common::make_errno_error_inval();
   }
 
   if (access) {
+    common::http::header_t found_key_in_headers;
+    if (!req.FindHeaderByKey(API_KEY_PARAM, false, &found_key_in_headers)) {
+      return common::make_errno_error("Don't have permissions", EACCES);
+    }
+
+    const auto expire_key = common::license::make_license<common::license::expire_key_t>(found_key_in_headers.value);
+    if (!expire_key) {
+      return common::make_errno_error("Invalid access key", EACCES);
+    }
+
+    common::time64_t tm;
+    bool is_valid = common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, *expire_key, &tm);
+    if (!is_valid) {
+      common::Error err = common::make_error("Invalid expire key");
+      return common::make_errno_error(err->GetDescription(), EINVAL);
+    }
+
+    dclient->SetVerified(true, tm);
+
     if (!dclient->HaveFullAccess()) {
       return common::make_errno_error("Don't have permissions", EACCES);
     }
   }
 
-  const char* params_ptr = req->params->c_str();
-  json_object* jinfo = json_tokener_parse(params_ptr);
+  const auto params_ptr = req.GetBody();
+  const char* data = params_ptr.data();
+  json_object* jinfo = json_tokener_parse(data);
   if (!jinfo) {
     return common::make_errno_error("Can't parse request", EINVAL);
   }
@@ -116,6 +132,65 @@ common::ErrnoError ParseClientRequest(ProtocoledDaemonClient* dclient,
     const std::string err_str = err_des->GetDescription();
     return common::make_errno_error(err_str, EINVAL);
   }
+  return common::ErrnoError();
+}
+
+common::ErrnoError ParseGetClientRequest(ProtocoledDaemonClient* dclient,
+                                         const common::http::HttpRequest& req,
+                                         bool access = true) {
+  if (!dclient) {
+    return common::make_errno_error_inval();
+  }
+
+  if (access) {
+    common::http::header_t found_key_in_headers;
+    if (!req.FindHeaderByKey(API_KEY_PARAM, false, &found_key_in_headers)) {
+      return common::make_errno_error("Don't have permissions", EACCES);
+    }
+
+    const auto expire_key = common::license::make_license<common::license::expire_key_t>(found_key_in_headers.value);
+    if (!expire_key) {
+      return common::make_errno_error("Invalid access key", EACCES);
+    }
+
+    common::time64_t tm;
+    bool is_valid = common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, *expire_key, &tm);
+    if (!is_valid) {
+      common::Error err = common::make_error("Invalid expire key");
+      return common::make_errno_error(err->GetDescription(), EINVAL);
+    }
+
+    dclient->SetVerified(true, tm);
+
+    if (!dclient->HaveFullAccess()) {
+      return common::make_errno_error("Don't have permissions", EACCES);
+    }
+  }
+
+  return common::ErrnoError();
+}
+
+template <typename T>
+common::ErrnoError ParseStreamRequest(ProcessSlaveWrapper::stream_client_t* pclient,
+                                      const fastotv::protocol::request_t* req,
+                                      common::serializer::JsonSerializer<T>* result) {
+  if (!req->params || !pclient || !req || !result) {
+    return common::make_errno_error_inval();
+  }
+
+  const char* params_ptr = req->params->c_str();
+  json_object* jinfo = json_tokener_parse(params_ptr);
+  if (!jinfo) {
+    return common::make_errno_error_inval();
+  }
+
+  common::Error err_des = result->DeSerialize(jinfo);
+  json_object_put(jinfo);
+  if (err_des) {
+    const std::string err_str = err_des->GetDescription();
+    return common::make_errno_error(err_str, EAGAIN);
+  }
+
   return common::ErrnoError();
 }
 
@@ -251,19 +326,16 @@ ProcessSlaveWrapper::ProcessSlaveWrapper(const Config& config)
   cods_server_->SetName("cods_server");
 }
 
-common::ErrnoError ProcessSlaveWrapper::SendRestartDaemonRequest(const Config& config) {
-  if (!config.IsValid()) {
-    return common::make_errno_error_inval();
-  }
-
+common::ErrnoError ProcessSlaveWrapper::SendStopDaemonRequest(const common::net::HostAndPort& host) {
   common::net::socket_info client_info;
-  common::ErrnoError err = common::net::connect(config.host, common::net::ST_SOCK_STREAM, nullptr, &client_info);
+  common::ErrnoError err = common::net::connect(host, common::net::ST_SOCK_STREAM, nullptr, &client_info);
   if (err) {
     return err;
   }
 
   std::unique_ptr<ProtocoledDaemonClient> connection(new ProtocoledDaemonClient(nullptr, client_info));
-  err = connection->RestartMe();
+  auto url = common::uri::GURL("http://" + common::ConvertToString(host) + "/" + DAEMON_STOP_SERVICE);
+  err = connection->StopMe(url);
   if (err) {
     ignore_result(connection->Close());
     return err;
@@ -273,19 +345,16 @@ common::ErrnoError ProcessSlaveWrapper::SendRestartDaemonRequest(const Config& c
   return common::ErrnoError();
 }
 
-common::ErrnoError ProcessSlaveWrapper::SendStopDaemonRequest(const Config& config) {
-  if (!config.IsValid()) {
-    return common::make_errno_error_inval();
-  }
-
+common::ErrnoError ProcessSlaveWrapper::SendRestartDaemonRequest(const common::net::HostAndPort& host) {
   common::net::socket_info client_info;
-  common::ErrnoError err = common::net::connect(config.host, common::net::ST_SOCK_STREAM, nullptr, &client_info);
+  common::ErrnoError err = common::net::connect(host, common::net::ST_SOCK_STREAM, nullptr, &client_info);
   if (err) {
     return err;
   }
 
   std::unique_ptr<ProtocoledDaemonClient> connection(new ProtocoledDaemonClient(nullptr, client_info));
-  err = connection->StopMe();
+  auto url = common::uri::GURL("http://" + common::ConvertToString(host) + "/" + DAEMON_RESTART_SERVICE);
+  err = connection->RestartMe(url);
   if (err) {
     ignore_result(connection->Close());
     return err;
@@ -357,10 +426,6 @@ common::ErrnoError ProcessSlaveWrapper::Prepare() {
   return common::ErrnoError();
 }
 
-bool ProcessSlaveWrapper::IsStoped() const {
-  return stoped_;
-}
-
 int ProcessSlaveWrapper::Exec(int argc, char** argv) {
   process_argc_ = argc;
   process_argv_ = argv;
@@ -373,7 +438,7 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
 
   // gpu statistic monitor
   HttpServer* http_server = static_cast<HttpServer*>(http_server_);
-  std::thread http_thread = std::thread([http_server] {
+  auto http_thread = std::thread([http_server] {
     common::ErrnoError err = http_server->Bind(true);
     if (err) {
       ERROR_LOG() << "HttpServer bind error: " << err->GetDescription();
@@ -386,13 +451,13 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
       return;
     }
 
-    INFO_LOG() << "HttpServer have started";
+    INFO_LOG() << "HttpServer have started address: " << common::ConvertToString(http_server->GetHost());
     int res = http_server->Exec();
     INFO_LOG() << "HttpServer have finished: " << res;
   });
 
   HttpServer* vods_server = static_cast<HttpServer*>(vods_server_);
-  std::thread vods_thread = std::thread([vods_server] {
+  auto vods_thread = std::thread([vods_server] {
     common::ErrnoError err = vods_server->Bind(true);
     if (err) {
       ERROR_LOG() << "VodsServer bind error: " << err->GetDescription();
@@ -405,13 +470,13 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
       return;
     }
 
-    INFO_LOG() << "VodsServer have started";
+    INFO_LOG() << "VodsServer have started address: " << common::ConvertToString(vods_server->GetHost());
     int res = vods_server->Exec();
     INFO_LOG() << "VodsServer have finished: " << res;
   });
 
   HttpServer* cods_server = static_cast<HttpServer*>(cods_server_);
-  std::thread cods_thread = std::thread([cods_server] {
+  auto cods_thread = std::thread([cods_server] {
     common::ErrnoError err = cods_server->Bind(true);
     if (err) {
       ERROR_LOG() << "CodsServer bind error: " << err->GetDescription();
@@ -424,7 +489,7 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
       return;
     }
 
-    INFO_LOG() << "CodsServer have started";
+    INFO_LOG() << "CodsServer have started address: " << common::ConvertToString(cods_server->GetHost());
     int res = cods_server->Exec();
     INFO_LOG() << "CodsServer have finished: " << res;
   });
@@ -454,6 +519,7 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
   node_stats_->prev_nshot = service::GetMachineNetShot();
   node_stats_->timestamp = common::time::current_utc_mstime();
 
+  INFO_LOG() << "DaemonServer have started address: " << common::ConvertToString(server->GetHost());
   res = server->Exec();
 
 finished:
@@ -468,6 +534,10 @@ finished:
   }
   node_stats_->Stop();
   return res;
+}
+
+bool ProcessSlaveWrapper::IsStoped() const {
+  return stoped_;
 }
 
 void ProcessSlaveWrapper::PreLooped(common::libev::IoLoop* server) {
@@ -488,7 +558,13 @@ void ProcessSlaveWrapper::Moved(common::libev::IoLoop* server, common::libev::Io
 }
 
 void ProcessSlaveWrapper::Closed(common::libev::IoClient* client) {
-  UNUSED(client);
+  ProtocoledDaemonClient* dclient = dynamic_cast<ProtocoledDaemonClient*>(client);
+  if (dclient && dclient->IsVerified()) {
+    auto step = dclient->Step();
+    if (step != common::libev::websocket::ZERO) {
+      ignore_result(dclient->SendEOS());
+    }
+  }
 }
 
 void ProcessSlaveWrapper::TimerEmited(common::libev::IoLoop* server, common::libev::timer_id_t id) {
@@ -508,24 +584,14 @@ void ProcessSlaveWrapper::TimerEmited(common::libev::IoLoop* server, common::lib
           }
           continue;
         }
-
-        common::ErrnoError err = dclient->Ping();
-        if (err) {
-          DEBUG_MSG_ERROR(err, common::logging::LOG_LEVEL_ERR);
-          ignore_result(dclient->Close());
-          delete dclient;
-        } else {
-          INFO_LOG() << "Sent ping to client[" << client->GetFormatedName() << "], from server["
-                     << server->GetFormatedName() << "], " << online_clients.size() << " client(s) connected.";
-        }
       }
     }
   } else if (check_cods_vods_timer_ == id) {
     fastotv::timestamp_t current_time = common::time::current_utc_mstime();
     auto childs = server->GetChilds();
     for (auto* child : childs) {
-      auto channel = static_cast<ChildStream*>(child);
-      if (channel->IsCOD()) {
+      auto channel = dynamic_cast<ChildStream*>(child);
+      if (channel && channel->IsCOD()) {
         fastotv::timestamp_t cod_last_update = channel->GetLastUpdate();
         fastotv::timestamp_t ts_diff = current_time - cod_last_update;
         if (ts_diff > config_.cods_ttl * 1000) {
@@ -540,8 +606,8 @@ void ProcessSlaveWrapper::TimerEmited(common::libev::IoLoop* server, common::lib
       RemoveOldFilesByTime(folder, max_life_time, "*" CHUNK_EXT, true);
     }
   } else if (node_stats_timer_ == id) {
-    const std::string node_stats = MakeServiceStats(common::Optional<common::time64_t>());
-    fastotv::protocol::request_t req;
+    const auto node_stats = MakeServiceInfoStats();
+    common::json::WsDataJson req;
     common::Error err_ser = StatisitcServiceBroadcast(node_stats, &req);
     if (err_ser) {
       return;
@@ -577,7 +643,7 @@ void ProcessSlaveWrapper::ChildStatusChanged(common::libev::IoChild* child, int 
   delete channel;
 
   stream::QuitStatusInfo ch_status_info(sid, status, signal);
-  fastotv::protocol::request_t req;
+  common::json::WsDataJson req;
   common::Error err_ser = QuitStatusStreamBroadcast(ch_status_info, &req);
   if (err_ser) {
     return;
@@ -615,12 +681,12 @@ ChildStream* ProcessSlaveWrapper::FindChildByID(fastotv::stream_id_t cid) const 
   return nullptr;
 }
 
-void ProcessSlaveWrapper::BroadcastClients(const fastotv::protocol::request_t& req) {
+void ProcessSlaveWrapper::BroadcastClients(const common::json::WsDataJson& req) {
   std::vector<common::libev::IoClient*> clients = loop_->GetClients();
   for (size_t i = 0; i < clients.size(); ++i) {
     ProtocoledDaemonClient* dclient = dynamic_cast<ProtocoledDaemonClient*>(clients[i]);
     if (dclient && dclient->IsVerified()) {
-      common::ErrnoError err = dclient->WriteRequest(req);
+      common::ErrnoError err = dclient->Broadcast(req);
       if (err) {
         WARNING_LOG() << "BroadcastClients error: " << err->GetDescription();
       }
@@ -628,47 +694,115 @@ void ProcessSlaveWrapper::BroadcastClients(const fastotv::protocol::request_t& r
   }
 }
 
-common::ErrnoError ProcessSlaveWrapper::DaemonDataReceived(ProtocoledDaemonClient* dclient) {
-  CHECK(loop_->IsLoopThread());
-  std::string input_command;
-  common::ErrnoError err = dclient->ReadCommand(&input_command);
-  if (err) {
-    return err;  // i don't want handle spam, comand must be foramated according protocol
-  }
+common::ErrnoError ProcessSlaveWrapper::ProcessReceived(ProtocoledDaemonClient* hclient,
+                                                        const char* request,
+                                                        size_t req_len) {
+  static const common::libev::http::HttpServerInfo hinf(PROJECT_NAME_TITLE "/" PROJECT_VERSION, PROJECT_DOMAIN);
+  common::http::HttpRequest hrequest;
+  const auto result = common::http::parse_http_request(request, req_len, &hrequest);
+  DEBUG_LOG() << "Http request:\n" << request;
 
-  fastotv::protocol::request_t* req = nullptr;
-  fastotv::protocol::response_t* resp = nullptr;
-  common::Error err_parse = common::protocols::json_rpc::ParseJsonRPC(input_command, &req, &resp);
-  if (err_parse) {
-    const std::string err_str = err_parse->GetDescription();
+  common::http::headers_t extra_headers = {{"Access-Control-Allow-Origin", "*"}};
+  if (result.second) {
+    const std::string err_str = result.second->GetDescription();
     return common::make_errno_error(err_str, EAGAIN);
   }
 
-  if (req) {
-    if (req->IsNotification()) {
-      delete req;
-      return common::make_errno_error("Don't handle notificastions for now.", EINVAL);
+  auto url = hrequest.GetURL();
+  auto route = url.path();
+  auto method = hrequest.GetMethod();
+  if (method == common::http::HM_POST) {
+    if (route == "/" DAEMON_STOP_SERVICE) {  // +
+      return HandleRequestClientStopService(hclient, hrequest);
+    } else if (route == "/" DAEMON_RESTART_SERVICE) {  // +
+      return HandleRequestClientRestartService(hclient, hrequest);
+    } else if (route == "/" DAEMON_START_STREAM) {  // +
+      return HandleRequestClientStartStream(hclient, hrequest);
+    } else if (route == "/" DAEMON_RESTART_STREAM) {  // +
+      return HandleRequestClientRestartStream(hclient, hrequest);
+    } else if (route == "/" DAEMON_STOP_STREAM) {  // +
+      return HandleRequestClientStopStream(hclient, hrequest);
+    } else if (route == "/" DAEMON_GET_PIPELINE_STREAM) {  // +
+      return HandleRequestClientGetPipelineStream(hclient, hrequest);
+    } else if (route == "/" DAEMON_GET_LOG_STREAM) {  // +
+      return HandleRequestClientGetLogStream(hclient, hrequest);
+    } else if (route == "/" DAEMON_GET_CONFIG_JSON_STREAM) {  // +
+      return HandleRequestClientGetConfigJsonStream(hclient, hrequest);
     }
 
-    DEBUG_LOG() << "Received daemon request: " << input_command;
-    err = HandleRequestServiceCommand(dclient, req);
-    if (err) {
-      DEBUG_MSG_ERROR(err, common::logging::LOG_LEVEL_ERR);
+  } else if (method == common::http::http_method::HM_GET || method == common::http::http_method::HM_HEAD) {
+    if (method == common::http::http_method::HM_GET) {
+      if (route == "/" DAEMON_STATS_SERVICE) {  // +
+        return HandleRequestClientGetStats(hclient, hrequest);
+      } else if (route == "/" DAEMON_GET_LOG_SERVICE) {  // +
+        return HandleRequestClientGetLogService(hclient, hrequest);
+      } else if (route == "/" WS_UPDATES) {
+        common::http::header_t head;
+        if (!hrequest.FindHeaderByKey("Sec-WebSocket-Key", false, &head)) {
+          return common::make_errno_error("not found Sec-WebSocket-Key header", EAGAIN);
+        }
+
+        common::http::header_t found_key_in_headers;
+        if (!hrequest.FindHeaderByKey(API_KEY_PARAM, false, &found_key_in_headers)) {
+          auto query_str = url.query();
+          common::uri::Component key, value;
+          common::uri::Component query(0, query_str.length());
+          common::Optional<std::string> found_key_in_params;
+          while (common::uri::ExtractQueryKeyValue(query_str.c_str(), &query, &key, &value)) {
+            std::string key_string(query_str.substr(key.begin, key.len));
+            std::string param_text(query_str.substr(value.begin, value.len));
+            if (common::EqualsASCII(key_string, API_KEY_PARAM, false)) {
+              found_key_in_params = param_text;
+              break;
+            }
+          }
+
+          if (!found_key_in_params) {
+            return common::make_errno_error("Don't have permissions", EACCES);
+          }
+          found_key_in_headers.value = *found_key_in_params;
+        }
+
+        const auto expire_key =
+            common::license::make_license<common::license::expire_key_t>(found_key_in_headers.value);
+        if (!expire_key) {
+          common::Error err = common::make_error("Invalid expire key");
+          return common::make_errno_error(err->GetDescription(), EINVAL);
+        }
+
+        common::time64_t tm;
+        bool is_valid = common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, *expire_key, &tm);
+        if (!is_valid) {
+          common::Error err = common::make_error("Failed to get expire key time");
+          return common::make_errno_error(err->GetDescription(), EINVAL);
+        }
+
+        hclient->SetVerified(true, tm);
+        if (!hclient->HaveFullAccess()) {
+          return common::make_errno_error("Don't have permissions", EACCES);
+        }
+
+        common::http::headers_t extra_headers = {{"Access-Control-Allow-Origin", "*"}};
+        return hclient->SendSwitchProtocolsResponse(head.value, extra_headers, hclient->GetServerInfo());
+      }
     }
-    delete req;
-    return common::ErrnoError();
-  } else if (resp) {
-    DEBUG_LOG() << "Received daemon responce: " << input_command;
-    err = HandleResponceServiceCommand(dclient, resp);
-    if (err) {
-      DEBUG_MSG_ERROR(err, common::logging::LOG_LEVEL_ERR);
+  }
+  return hclient->UnknownMethodError(method, route);
+}
+
+common::ErrnoError ProcessSlaveWrapper::DaemonDataReceived(ProtocoledDaemonClient* dclient) {
+  CHECK(loop_->IsLoopThread());
+  char buff[BUF_SIZE] = {0};
+  size_t nread = 0;
+  common::ErrnoError errn = dclient->SingleRead(buff, BUF_SIZE - 1, &nread);
+  if (errn || nread == 0) {
+    if (nread == 0) {
+      return kClosedDaemon;
     }
-    delete resp;
-    return common::ErrnoError();
+    return errn;
   }
 
-  WARNING_LOG() << "Received unknown daemon message: " << input_command;
-  return common::make_errno_error("Invalid command type.", EINVAL);
+  return ProcessReceived(dclient, buff, nread);
 }
 
 common::ErrnoError ProcessSlaveWrapper::StreamDataReceived(stream_client_t* pipe_client) {
@@ -711,11 +845,17 @@ common::ErrnoError ProcessSlaveWrapper::StreamDataReceived(stream_client_t* pipe
 
 void ProcessSlaveWrapper::DataReceived(common::libev::IoClient* client) {
   if (ProtocoledDaemonClient* dclient = dynamic_cast<ProtocoledDaemonClient*>(client)) {
-    common::ErrnoError err = DaemonDataReceived(dclient);
+    auto err = DaemonDataReceived(dclient);
     if (err) {
-      DEBUG_MSG_ERROR(err, common::logging::LOG_LEVEL_ERR);
+      ERROR_LOG() << "DataReceived daemon error: " << err->GetDescription();
       ignore_result(dclient->Close());
       delete dclient;
+    } else {
+      auto step = dclient->Step();
+      if (step == common::libev::websocket::ZERO) {
+        ignore_result(dclient->Close());
+        delete dclient;
+      }
     }
   } else if (stream_client_t* pipe_client = dynamic_cast<stream_client_t*>(client)) {
     common::ErrnoError err = StreamDataReceived(pipe_client);
@@ -776,108 +916,62 @@ void ProcessSlaveWrapper::PostLooped(common::libev::IoLoop* server) {
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestClientRestartService(ProtocoledDaemonClient* dclient,
-                                                                          const fastotv::protocol::request_t* req) {
+                                                                          const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
 
-  if (!dclient->IsVerified()) {
-    const auto info = dclient->GetInfo();
-    if (!common::net::IsLocalHost(info.host())) {
-      common::Error err(common::MemSPrintf("Skipped stop request from: %s", info.host()));
-      ignore_result(dclient->StopFail(req->id, err));
-      return common::make_errno_error(err->GetDescription(), EINVAL);
-    }
+  const auto info = dclient->GetInfo();
+  if (!common::net::IsLocalHost(info.host())) {
+    common::Error err(common::MemSPrintf("Skipped restart request from: %s", info.host()));
+    ignore_result(dclient->RestartFail(common::http::HS_FORBIDDEN, err));
+    return common::make_errno_error(err->GetDescription(), EINVAL);
+  };
+
+  common::daemon::commands::RestartInfo restart_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &restart_info, false);
+  if (errn) {
+    ignore_result(dclient->RestartFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
   }
 
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jstop = json_tokener_parse(params_ptr);
-    if (!jstop) {
-      return common::make_errno_error_inval();
-    }
-
-    common::daemon::commands::RestartInfo stop_info;
-    common::Error err_des = stop_info.DeSerialize(jstop);
-    json_object_put(jstop);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    if (quit_cleanup_timer_ != INVALID_TIMER_ID) {
-      // in progress
-      return dclient->StopFail(req->id, common::make_error("Restart service in progress..."));
-    }
-
-    StopImpl();
-    return dclient->StopSuccess(req->id);
+  if (quit_cleanup_timer_ != INVALID_TIMER_ID) {
+    // in progress
+    common::Error err = common::make_error("Restart service in progress...");
+    ignore_result(dclient->RestartFail(common::http::HS_INTERNAL_ERROR, err));
+    return common::make_errno_error(err->GetDescription(), EAGAIN);
   }
 
-  return common::make_errno_error_inval();
+  StopImpl();
+  return dclient->RestartSuccess();
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStopService(ProtocoledDaemonClient* dclient,
-                                                                       const fastotv::protocol::request_t* req) {
+                                                                       const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
 
-  if (!dclient->IsVerified()) {
-    const auto info = dclient->GetInfo();
-    if (!common::net::IsLocalHost(info.host())) {
-      common::Error err(common::MemSPrintf("Skipped stop request from: %s", info.host()));
-      ignore_result(dclient->StopFail(req->id, err));
-      return common::make_errno_error(err->GetDescription(), EINVAL);
-    }
+  const auto info = dclient->GetInfo();
+  if (!common::net::IsLocalHost(info.host())) {
+    common::Error err(common::MemSPrintf("Skipped restart request from: %s", info.host()));
+    ignore_result(dclient->StopFail(common::http::HS_FORBIDDEN, err));
+    return common::make_errno_error(err->GetDescription(), EINVAL);
   }
 
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jstop = json_tokener_parse(params_ptr);
-    if (!jstop) {
-      return common::make_errno_error_inval();
-    }
-
-    common::daemon::commands::StopInfo stop_info;
-    common::Error err_des = stop_info.DeSerialize(jstop);
-    json_object_put(jstop);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    if (quit_cleanup_timer_ != INVALID_TIMER_ID) {
-      // in progress
-      return dclient->StopFail(req->id, common::make_error("Stop service in progress..."));
-    }
-
-    StopImpl();
-    stoped_ = true;
-    return dclient->StopSuccess(req->id);
+  common::daemon::commands::StopInfo stop_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &stop_info, false);
+  if (errn) {
+    ignore_result(dclient->StopFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
   }
 
-  return common::make_errno_error_inval();
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleResponcePingService(ProtocoledDaemonClient* dclient,
-                                                                  const fastotv::protocol::response_t* resp) {
-  UNUSED(dclient);
-  CHECK(loop_->IsLoopThread());
-
-  if (resp->IsMessage()) {
-    const char* params_ptr = resp->message->result.c_str();
-    json_object* jclient_ping = json_tokener_parse(params_ptr);
-    if (!jclient_ping) {
-      return common::make_errno_error_inval();
-    }
-
-    common::daemon::commands::ClientPingInfo client_ping_info;
-    common::Error err_des = client_ping_info.DeSerialize(jclient_ping);
-    json_object_put(jclient_ping);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-    return common::ErrnoError();
+  if (quit_cleanup_timer_ != INVALID_TIMER_ID) {
+    // in progress
+    common::Error err = common::make_error("Stop service in progress...");
+    ignore_result(dclient->StopFail(common::http::HS_INTERNAL_ERROR, err));
+    return common::make_errno_error(err->GetDescription(), EAGAIN);
   }
-  return common::ErrnoError();
+
+  StopImpl();
+  stoped_ = true;
+  return dclient->StopSuccess();
 }
 
 common::ErrnoError ProcessSlaveWrapper::CreateChildStream(const serialized_stream_t& config_args) {
@@ -925,68 +1019,44 @@ common::ErrnoError ProcessSlaveWrapper::StopChildStreamImpl(fastotv::stream_id_t
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestChangedSourcesStream(stream_client_t* pclient,
                                                                           const fastotv::protocol::request_t* req) {
-  UNUSED(pclient);
   CHECK(loop_->IsLoopThread());
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jrequest_changed_sources = json_tokener_parse(params_ptr);
-    if (!jrequest_changed_sources) {
-      return common::make_errno_error_inval();
-    }
 
-    ChangedSouresInfo ch_sources_info;
-    common::Error err_des = ch_sources_info.DeSerialize(jrequest_changed_sources);
-    json_object_put(jrequest_changed_sources);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    fastotv::protocol::request_t req;
-    common::Error err_ser = ChangedSourcesStreamBroadcast(ch_sources_info, &req);
-    if (err_ser) {
-      const std::string err_str = err_ser->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    BroadcastClients(req);
-    return common::ErrnoError();
+  ChangedSouresInfo ch_sources_info;
+  common::ErrnoError errn = ParseStreamRequest(pclient, req, &ch_sources_info);
+  if (errn) {
+    return errn;
   }
 
-  return common::make_errno_error_inval();
+  common::json::WsDataJson breq;
+  common::Error err_ser = ChangedSourcesStreamBroadcast(ch_sources_info, &breq);
+  if (err_ser) {
+    const std::string err_str = err_ser->GetDescription();
+    return common::make_errno_error(err_str, EAGAIN);
+  }
+
+  BroadcastClients(breq);
+  return common::ErrnoError();
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestStatisticStream(stream_client_t* pclient,
                                                                      const fastotv::protocol::request_t* req) {
-  UNUSED(pclient);
   CHECK(loop_->IsLoopThread());
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jrequest_stat = json_tokener_parse(params_ptr);
-    if (!jrequest_stat) {
-      return common::make_errno_error_inval();
-    }
 
-    StatisticInfo stat;
-    common::Error err_des = stat.DeSerialize(jrequest_stat);
-    json_object_put(jrequest_stat);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    fastotv::protocol::request_t req;
-    common::Error err_ser = StatisitcStreamBroadcast(stat, &req);
-    if (err_ser) {
-      const std::string err_str = err_ser->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    BroadcastClients(req);
-    return common::ErrnoError();
+  StatisticInfo stat;
+  common::ErrnoError errn = ParseStreamRequest(pclient, req, &stat);
+  if (errn) {
+    return errn;
   }
 
-  return common::make_errno_error_inval();
+  common::json::WsDataJson breq;
+  common::Error err_ser = StatisitcStreamBroadcast(stat, &breq);
+  if (err_ser) {
+    const std::string err_str = err_ser->GetDescription();
+    return common::make_errno_error(err_str, EAGAIN);
+  }
+
+  BroadcastClients(breq);
+  return common::ErrnoError();
 }
 
 #if defined(MACHINE_LEARNING)
@@ -1024,369 +1094,170 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestMlNotificationStream(stream
 }
 #endif
 
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStartStream(ProtocoledDaemonClient* dclient,
-                                                                       const fastotv::protocol::request_t* req) {
+common::ErrnoError ProcessSlaveWrapper::RestartChildStreamImpl(fastotv::stream_id_t sid) {
   CHECK(loop_->IsLoopThread());
-  if (!dclient->HaveFullAccess()) {
-    return common::make_errno_error("Don't have permissions", EINTR);
+
+  auto stream = FindChildByID(sid);
+  if (!stream) {
+    return common::make_errno_error(common::MemSPrintf("Stream with id: %s does not exist, skip request.", sid),
+                                    EINVAL);
   }
 
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jstart_info = json_tokener_parse(params_ptr);
-    if (!jstart_info) {
-      return common::make_errno_error_inval();
-    }
-
-    stream::StartInfo start_info;
-    common::Error err_des = start_info.DeSerialize(jstart_info);
-    json_object_put(jstart_info);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    common::ErrnoError errn = CreateChildStream(start_info.GetConfig());
-    if (errn) {
-      DEBUG_MSG_ERROR(errn, common::logging::LOG_LEVEL_WARNING);
-      ignore_result(dclient->StartStreamFail(req->id, common::make_error_from_errno(errn)));
-      return errn;
-    }
-
-    return dclient->StartStreamSuccess(req->id);
-  }
-
-  return common::make_errno_error_inval();
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStopStream(ProtocoledDaemonClient* dclient,
-                                                                      const fastotv::protocol::request_t* req) {
-  CHECK(loop_->IsLoopThread());
-  if (!dclient->HaveFullAccess()) {
-    return common::make_errno_error("Don't have permissions", EINTR);
-  }
-
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jstop_info = json_tokener_parse(params_ptr);
-    if (!jstop_info) {
-      return common::make_errno_error_inval();
-    }
-
-    stream::StopInfo stop_info;
-    common::Error err_des = stop_info.DeSerialize(jstop_info);
-    json_object_put(jstop_info);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    common::ErrnoError errn = StopChildStreamImpl(stop_info.GetStreamID(), stop_info.GetForce());
-    if (errn) {
-      return dclient->StopFail(req->id, common::make_error_from_errno(errn));
-    }
-
-    return dclient->StopStreamSuccess(req->id);
-  }
-
-  return common::make_errno_error_inval();
+  return stream->Restart();
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestClientRestartStream(ProtocoledDaemonClient* dclient,
-                                                                         const fastotv::protocol::request_t* req) {
-  CHECK(loop_->IsLoopThread());
-  if (!dclient->HaveFullAccess()) {
-    return common::make_errno_error("Don't have permissions", EINTR);
-  }
-
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jrestart_info = json_tokener_parse(params_ptr);
-    if (!jrestart_info) {
-      return common::make_errno_error_inval();
-    }
-
-    stream::RestartInfo restart_info;
-    common::Error err_des = restart_info.DeSerialize(jrestart_info);
-    json_object_put(jrestart_info);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    Child* chan = FindChildByID(restart_info.GetStreamID());
-    if (!chan) {
-      return dclient->ReStartStreamFail(req->id, common::make_error("Stream not found"));
-    }
-
-    ignore_result(chan->Restart());
-    return dclient->ReStartStreamSuccess(req->id);
-  }
-
-  return common::make_errno_error_inval();
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetLogStream(ProtocoledDaemonClient* dclient,
-                                                                        const fastotv::protocol::request_t* req) {
+                                                                         const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
 
-  stream::GetLogInfo log_info;
-  common::ErrnoError errn = ParseClientRequest(dclient, req, &log_info);
+  stream::RestartInfo restart_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &restart_info);
   if (errn) {
-    ignore_result(dclient->GetLogStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->ReStartStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  const auto remote_log_path = log_info.GetLogPath();
-  if (!remote_log_path.SchemeIsHTTPOrHTTPS()) {
-    common::ErrnoError errn = common::make_errno_error("Not supported protocol", EAGAIN);
-    ignore_result(dclient->GetLogStreamFail(req->id, common::make_error_from_errno(errn)));
+  errn = RestartChildStreamImpl(restart_info.GetStreamID());
+  if (errn) {
+    ignore_result(dclient->ReStartStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
+    return errn;
+  }
+
+  return dclient->ReStartStreamSuccess();
+}
+
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetLogService(ProtocoledDaemonClient* dclient,
+                                                                         const common::http::HttpRequest& req) {
+  CHECK(loop_->IsLoopThread());
+
+  common::ErrnoError errn = ParseGetClientRequest(dclient, req);
+  if (errn) {
+    ignore_result(dclient->GetLogServiceFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
+  }
+
+  return dclient->GetLogServiceSuccess(config_.log_path);
+}
+
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetLogStream(ProtocoledDaemonClient* dclient,
+                                                                        const common::http::HttpRequest& req) {
+  CHECK(loop_->IsLoopThread());
+
+  stream::GetLogInfo log_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &log_info);
+  if (errn) {
+    ignore_result(dclient->GetLogStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
     return errn;
   }
 
   const auto stream_log_file = MakeStreamLogPath(log_info.GetFeedbackDir());
   if (!stream_log_file) {
     common::ErrnoError errn = common::make_errno_error("Can't generate log stream path", EAGAIN);
-    ignore_result(dclient->GetLogStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->GetLogStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  common::Error err = PostHttpOrHttpsFile(*stream_log_file, remote_log_path);
-  if (err) {
-    ignore_result(dclient->GetLogStreamFail(req->id, err));
-    const std::string err_str = err->GetDescription();
-    return common::make_errno_error(err_str, EAGAIN);
-  }
-
-  ignore_result(dclient->GetLogStreamSuccess(req->id));
-  return common::ErrnoError();
+  return dclient->GetLogStreamSuccess(stream_log_file->GetPath());
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetPipelineStream(ProtocoledDaemonClient* dclient,
-                                                                             const fastotv::protocol::request_t* req) {
+                                                                             const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
   stream::GetPipelineInfo pipeline_info;
-  common::ErrnoError errn = ParseClientRequest(dclient, req, &pipeline_info);
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &pipeline_info);
   if (errn) {
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
-    return errn;
-  }
-
-  const auto remote_log_path = pipeline_info.GetLogPath();
-  if (!remote_log_path.SchemeIsHTTPOrHTTPS()) {
-    common::ErrnoError errn = common::make_errno_error("Not supported protocol", EAGAIN);
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->GetPipeStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
     return errn;
   }
 
   const auto pipe_file = MakeStreamPipelinePath(pipeline_info.GetFeedbackDir());
   if (!pipe_file) {
     common::ErrnoError errn = common::make_errno_error("Can't generate pipeline stream path", EAGAIN);
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->GetPipeStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  common::Error err = PostHttpOrHttpsFile(*pipe_file, remote_log_path);
-  if (err) {
-    ignore_result(dclient->GetPipeStreamFail(req->id, err));
-    const std::string err_str = err->GetDescription();
-    return common::make_errno_error(err_str, EAGAIN);
-  }
-
-  ignore_result(dclient->GetPipeStreamSuccess(req->id));
-  return common::ErrnoError();
+  return dclient->GetPipeStreamSuccess(pipe_file->GetPath());
 }
 
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetConfigJsonStream(
-    ProtocoledDaemonClient* dclient,
-    const fastotv::protocol::request_t* req) {
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetConfigJsonStream(ProtocoledDaemonClient* dclient,
+                                                                               const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
   stream::GetConfigJsonInfo config_json;
-  common::ErrnoError errn = ParseClientRequest(dclient, req, &config_json);
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &config_json);
   if (errn) {
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
-    return errn;
-  }
-
-  const auto remote_log_path = config_json.GetLogPath();
-  if (!remote_log_path.SchemeIsHTTPOrHTTPS()) {
-    common::ErrnoError errn = common::make_errno_error("Not supported protocol", EAGAIN);
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->GetConfigStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
     return errn;
   }
 
   const auto pipe_file = MakeStreamConfigJsonPath(config_json.GetFeedbackDir());
   if (!pipe_file) {
     common::ErrnoError errn = common::make_errno_error("Can't generate config.json stream path", EAGAIN);
-    ignore_result(dclient->GetPipeStreamFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->GetConfigStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  common::Error err = PostHttpOrHttpsFile(*pipe_file, remote_log_path);
-  if (err) {
-    ignore_result(dclient->GetPipeStreamFail(req->id, err));
-    const std::string err_str = err->GetDescription();
-    return common::make_errno_error(err_str, EAGAIN);
-  }
-
-  ignore_result(dclient->GetPipeStreamSuccess(req->id));
-  return common::ErrnoError();
+  return dclient->GetConfigStreamSuccess(pipe_file->GetPath());
 }
 
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientActivate(ProtocoledDaemonClient* dclient,
-                                                                    const fastotv::protocol::request_t* req) {
-  CHECK(loop_->IsLoopThread());
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jactivate = json_tokener_parse(params_ptr);
-    if (!jactivate) {
-      return common::make_errno_error_inval();
-    }
-
-    common::daemon::commands::ActivateInfo activate_info;
-    common::Error err_des = activate_info.DeSerialize(jactivate);
-    json_object_put(jactivate);
-    if (err_des) {
-      ignore_result(dclient->ActivateFail(req->id, err_des));
-      return common::make_errno_error(err_des->GetDescription(), EAGAIN);
-    }
-
-    const auto expire_key = activate_info.GetLicense();
-    common::time64_t tm;
-    bool is_valid = common::license::GetExpireTimeFromKey(PROJECT_NAME_LOWERCASE, *expire_key, &tm);
-    if (!is_valid) {
-      common::Error err = common::make_error("Invalid expire key");
-      ignore_result(dclient->ActivateFail(req->id, err));
-      return common::make_errno_error(err->GetDescription(), EINVAL);
-    }
-
-    const std::string node_stats = MakeServiceStats(tm);
-    common::ErrnoError err_ser = dclient->ActivateSuccess(req->id, node_stats);
-    if (err_ser) {
-      return err_ser;
-    }
-
-    dclient->SetVerified(true, tm);
-    return common::ErrnoError();
-  }
-
-  return common::make_errno_error_inval();
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientPingService(ProtocoledDaemonClient* dclient,
-                                                                       const fastotv::protocol::request_t* req) {
-  CHECK(loop_->IsLoopThread());
-  if (!dclient->IsVerified()) {
-    return common::make_errno_error_inval();
-  }
-
-  if (req->params) {
-    const char* params_ptr = req->params->c_str();
-    json_object* jstop = json_tokener_parse(params_ptr);
-    if (!jstop) {
-      return common::make_errno_error_inval();
-    }
-
-    common::daemon::commands::ClientPingInfo client_ping_info;
-    common::Error err_des = client_ping_info.DeSerialize(jstop);
-    json_object_put(jstop);
-    if (err_des) {
-      const std::string err_str = err_des->GetDescription();
-      return common::make_errno_error(err_str, EAGAIN);
-    }
-
-    return dclient->Pong(req->id);
-  }
-
-  return common::make_errno_error_inval();
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetLogService(ProtocoledDaemonClient* dclient,
-                                                                         const fastotv::protocol::request_t* req) {
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStopStream(ProtocoledDaemonClient* dclient,
+                                                                      const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
 
-  common::daemon::commands::GetLogInfo get_log_info;
-  common::ErrnoError errn = ParseClientRequest(dclient, req, &get_log_info);
+  stream::StopInfo stop_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &stop_info);
   if (errn) {
-    ignore_result(dclient->PongFail(req->id, common::make_error_from_errno(errn)));
+    ignore_result(dclient->StopStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  const auto remote_log_path = get_log_info.GetLogPath();
-  if (!remote_log_path.SchemeIsHTTPOrHTTPS()) {
-    common::ErrnoError errn = common::make_errno_error("Not supported protocol", EAGAIN);
-    ignore_result(dclient->GetLogServiceFail(req->id, common::make_error_from_errno(errn)));
+  errn = StopChildStreamImpl(stop_info.GetStreamID(), stop_info.GetForce());
+  if (errn) {
+    ignore_result(dclient->StopStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
     return errn;
   }
 
-  common::Error err =
-      PostHttpOrHttpsFile(common::file_system::ascii_file_string_path(config_.log_path), remote_log_path);
-  if (err) {
-    ignore_result(dclient->GetLogServiceFail(req->id, err));
-    const std::string err_str = err->GetDescription();
-    return common::make_errno_error(err_str, EAGAIN);
-  }
-
-  ignore_result(dclient->GetLogServiceSuccess(req->id));
-  return common::ErrnoError();
+  return dclient->StopStreamSuccess();
 }
 
-common::ErrnoError ProcessSlaveWrapper::HandleRequestServiceCommand(ProtocoledDaemonClient* dclient,
-                                                                    const fastotv::protocol::request_t* req) {
-  if (req->method == DAEMON_START_STREAM) {
-    return HandleRequestClientStartStream(dclient, req);
-  } else if (req->method == DAEMON_STOP_STREAM) {
-    return HandleRequestClientStopStream(dclient, req);
-  } else if (req->method == DAEMON_RESTART_STREAM) {
-    return HandleRequestClientRestartStream(dclient, req);
-  } else if (req->method == DAEMON_GET_LOG_STREAM) {
-    return HandleRequestClientGetLogStream(dclient, req);
-  } else if (req->method == DAEMON_GET_PIPELINE_STREAM) {
-    return HandleRequestClientGetPipelineStream(dclient, req);
-  } else if (req->method == DAEMON_GET_CONFIG_JSON_STREAM) {
-    return HandleRequestClientGetConfigJsonStream(dclient, req);
-  } else if (req->method == DAEMON_RESTART_SERVICE) {
-    return HandleRequestClientRestartService(dclient, req);
-  } else if (req->method == DAEMON_STOP_SERVICE) {
-    return HandleRequestClientStopService(dclient, req);
-  } else if (req->method == DAEMON_ACTIVATE) {
-    return HandleRequestClientActivate(dclient, req);
-  } else if (req->method == DAEMON_PING_SERVICE) {
-    return HandleRequestClientPingService(dclient, req);
-  } else if (req->method == DAEMON_GET_LOG_SERVICE) {
-    return HandleRequestClientGetLogService(dclient, req);
-  }
-
-  return dclient->UnknownMethodError(req->id, req->method);
-}
-
-common::ErrnoError ProcessSlaveWrapper::HandleResponceServiceCommand(ProtocoledDaemonClient* dclient,
-                                                                     const fastotv::protocol::response_t* resp) {
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientStartStream(ProtocoledDaemonClient* dclient,
+                                                                       const common::http::HttpRequest& req) {
   CHECK(loop_->IsLoopThread());
-  if (!dclient->IsVerified()) {
-    return common::make_errno_error_inval();
+
+  stream::StartInfo start_info;
+  common::ErrnoError errn = ParsePostClientRequest(dclient, req, &start_info);
+  if (errn) {
+    ignore_result(dclient->StartStreamFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
   }
 
-  fastotv::protocol::request_t req;
-  const auto sid = resp->id;
-  if (dclient->PopRequestByID(sid, &req)) {
-    if (req.method == DAEMON_SERVER_PING) {
-      ignore_result(HandleResponcePingService(dclient, resp));
-    } else {
-      WARNING_LOG() << "HandleResponceServiceCommand not handled responce id: " << *sid << ", command: " << req.method;
-    }
-  } else {
-    WARNING_LOG() << "HandleResponceServiceCommand not found responce id: " << *sid;
+  errn = CreateChildStream(start_info.GetConfig());
+  if (errn) {
+    ignore_result(dclient->StartStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error_from_errno(errn)));
+    return errn;
   }
 
-  return common::ErrnoError();
+  return dclient->StartStreamSuccess();
+}
+
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetStats(ProtocoledDaemonClient* dclient,
+                                                                    const common::http::HttpRequest& req) {
+  CHECK(loop_->IsLoopThread());
+
+  common::ErrnoError errn = ParseGetClientRequest(dclient, req);
+  if (errn) {
+    ignore_result(dclient->GetStatsFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
+  }
+
+  return dclient->GetStatsSuccess(MakeServiceStats(dclient->GetExpTime()));
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestStreamsCommand(stream_client_t* pclient,
                                                                     const fastotv::protocol::request_t* req) {
-  if (req->method == CHANGED_SOURCES_STREAM) {
+  if (req->method == BROADCAST_CHANGED_SOURCES_STREAM) {
     return HandleRequestChangedSourcesStream(pclient, req);
-  } else if (req->method == STATISTIC_STREAM) {
+  } else if (req->method == BROADCAST_STATISTIC_STREAM) {
     return HandleRequestStatisticStream(pclient, req);
   }
 #if defined(MACHINE_LEARNING)
@@ -1402,12 +1273,15 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestStreamsCommand(stream_clien
 common::ErrnoError ProcessSlaveWrapper::HandleResponceStreamsCommand(stream_client_t* pclient,
                                                                      const fastotv::protocol::response_t* resp) {
   fastotv::protocol::request_t req;
-  if (pclient->PopRequestByID(resp->id, &req)) {
-    if (req.method == STOP_STREAM) {
-    } else if (req.method == RESTART_STREAM) {
+  const auto sid = resp->id;
+  if (pclient->PopRequestByID(sid, &req)) {
+    if (req.method == REQUEST_STOP_STREAM) {
+    } else if (req.method == REQUEST_RESTART_STREAM) {
     } else {
-      WARNING_LOG() << "HandleResponceStreamsCommand not handled command: " << req.method;
+      WARNING_LOG() << "HandleResponceStreamsCommand not handled responce id: " << *sid << ", command: " << req.method;
     }
+  } else {
+    WARNING_LOG() << "HandleResponceStreamsCommand not found responce id: " << *sid;
   }
   return common::ErrnoError();
 }
@@ -1427,7 +1301,20 @@ void ProcessSlaveWrapper::CheckLicenseExpired(common::libev::IoLoop* server) {
   }
 }
 
-std::string ProcessSlaveWrapper::MakeServiceStats(common::Optional<common::time64_t> expiration_time) const {
+service::FullServiceInfo ProcessSlaveWrapper::MakeServiceStats(common::time64_t expiration_time) const {
+  common::uri::Replacements<char> replacements;
+  replacements.SetHost(config_.alias.data(), common::uri::Component(0, static_cast<int>(config_.alias.length())));
+  auto stabled_hls_host = config_.hls_host.ReplaceComponents(replacements);
+  auto stabled_vods_host = config_.vods_host.ReplaceComponents(replacements);
+  auto stabled_cods_host = config_.cods_host.ReplaceComponents(replacements);
+  service::FullServiceInfo fstat(stabled_hls_host, stabled_vods_host, stabled_cods_host, expiration_time,
+                                 config_.hls_dir, config_.vods_dir, config_.cods_dir, config_.timeshifts_dir,
+                                 config_.feedback_dir, config_.proxy_dir, config_.data_dir, MakeServiceInfoStats());
+
+  return fstat;
+}
+
+service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
   service::CpuShot next = service::GetMachineCpuShot();
   double cpu_load = service::GetCpuMachineLoad(node_stats_->prev, next);
   node_stats_->prev = next;
@@ -1464,29 +1351,7 @@ std::string ProcessSlaveWrapper::MakeServiceStats(common::Optional<common::time6
                            bytes_recv / ts_diff, bytes_send / ts_diff, sshot.uptime, current_time, online,
                            next_nshot.bytes_recv, next_nshot.bytes_send);
 
-  std::string node_stats;
-  if (expiration_time) {
-    common::uri::Replacements<char> replacements;
-    replacements.SetHost(config_.alias.data(), common::uri::Component(0, static_cast<int>(config_.alias.length())));
-    auto stabled_hls_host = config_.hls_host.ReplaceComponents(replacements);
-    auto stabled_vods_host = config_.vods_host.ReplaceComponents(replacements);
-    auto stabled_cods_host = config_.cods_host.ReplaceComponents(replacements);
-    service::FullServiceInfo fstat(stabled_hls_host, stabled_vods_host, stabled_cods_host, *expiration_time,
-                                   config_.hls_dir, config_.vods_dir, config_.cods_dir, config_.timeshifts_dir,
-                                   config_.feedback_dir, config_.proxy_dir, config_.data_dir, stat);
-    common::Error err_ser = fstat.SerializeToString(&node_stats);
-    if (err_ser) {
-      const std::string err_str = err_ser->GetDescription();
-      WARNING_LOG() << "Failed to generate node full statistic: " << err_str;
-    }
-  } else {
-    common::Error err_ser = stat.SerializeToString(&node_stats);
-    if (err_ser) {
-      const std::string err_str = err_ser->GetDescription();
-      WARNING_LOG() << "Failed to generate node statistic: " << err_str;
-    }
-  }
-  return node_stats;
+  return stat;
 }
 
 }  // namespace server

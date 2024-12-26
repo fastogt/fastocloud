@@ -42,26 +42,17 @@ bool HtmlDump::Dump(GstBin* pipeline, const common::file_system::ascii_file_stri
     return false;
   }
 
-#if GST_CHECK_VERSION(1, 11, 1)
   char* dot_description = gst_debug_bin_to_dot_data(pipeline, GST_DEBUG_GRAPH_SHOW_ALL);
   if (!dot_description) {
     return false;
   }
 
   std::string pipeline_description(dot_description);
-  dumpfile << "<html><head></head>"
-           << "<body>"
-           << "  <script type=\"text/javascript\" src=\"" JS_LIB "\"></script>"
-           << "  <script>"
-           << "    document.body.innerHTML += Viz(String.raw`" << pipeline_description << "`);"
-           << "  </script>"
-           << "</body>"
-           << "</html>";
+  dumpfile << "<html><head></head>" << "<body>" << "  <script type=\"text/javascript\" src=\"" JS_LIB "\"></script>"
+           << "  <script>" << "    document.body.innerHTML += Viz(String.raw`" << pipeline_description << "`);"
+           << "  </script>" << "</body>" << "</html>";
   g_free(dot_description);
   return true;
-#else
-  return false;
-#endif
 #else
   return false;
 #endif

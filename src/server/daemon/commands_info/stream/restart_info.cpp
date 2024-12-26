@@ -16,12 +16,6 @@
 
 namespace fastocloud {
 namespace server {
-namespace stream {
-
-RestartInfo::RestartInfo() : base_class() {}
-
-RestartInfo::RestartInfo(const fastotv::stream_id_t& stream_id) : base_class(stream_id) {}
-
-}  // namespace stream
+namespace stream {}  // namespace stream
 }  // namespace server
 }  // namespace fastocloud

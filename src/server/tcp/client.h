@@ -14,9 +14,16 @@
 
 #pragma once
 
-#include <common/libev/tcp/tcp_client.h>
-
+#include <common/net/socket_info.h>
 #include <fastotv/protocol/protocol.h>
+
+namespace common {
+namespace libev {
+namespace tcp {
+class TcpClient;
+}
+}  // namespace libev
+}  // namespace common
 
 namespace fastocloud {
 namespace server {

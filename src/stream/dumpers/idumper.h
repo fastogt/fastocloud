@@ -24,7 +24,7 @@ namespace dumper {
 
 class IDumper {
  public:
-  virtual bool Dump(GstBin* pipeline, const common::file_system::ascii_file_string_path& path) = 0;
+  virtual bool Dump(GstBin* pipeline, const common::file_system::ascii_file_string_path& path) WARN_UNUSED_RESULT = 0;
   virtual ~IDumper();
 };
 

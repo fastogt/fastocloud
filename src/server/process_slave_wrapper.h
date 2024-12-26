@@ -14,10 +14,8 @@
 
 #pragma once
 
-#include <map>
-#include <string>
-#include <vector>
-
+#include <common/http/http.h>
+#include <common/json/json.h>
 #include <common/libev/io_loop_observer.h>
 #include <common/net/types.h>
 #include <common/threads/ts_queue.h>
@@ -29,6 +27,7 @@
 #include "base/stream_info.h"
 
 #include "server/config.h"
+#include "server/daemon/commands_info/service/server_info.h"
 
 namespace fastocloud {
 namespace server {
@@ -38,6 +37,7 @@ class ProtocoledDaemonClient;
 
 class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
  public:
+  enum { BUF_SIZE = 4096 };
   enum {
     node_stats_send_seconds = 10,
     ping_timeout_clients_seconds = 60,
@@ -51,9 +51,8 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
   explicit ProcessSlaveWrapper(const Config& config);
   ~ProcessSlaveWrapper() override;
 
-  static common::ErrnoError SendStopDaemonRequest(const Config& config);
-  static common::ErrnoError SendRestartDaemonRequest(const Config& config);
-  common::net::HostAndPort GetServerHostAndPort();
+  static common::ErrnoError SendStopDaemonRequest(const common::net::HostAndPort& host);
+  static common::ErrnoError SendRestartDaemonRequest(const common::net::HostAndPort& host);
 
   int Exec(int argc, char** argv) WARN_UNUSED_RESULT;
 
@@ -75,11 +74,6 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
   void DataReadyToWrite(common::libev::IoClient* client) override;
   void PostLooped(common::libev::IoLoop* server) override;
 
-  virtual common::ErrnoError HandleRequestServiceCommand(ProtocoledDaemonClient* dclient,
-                                                         const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
-  virtual common::ErrnoError HandleResponceServiceCommand(ProtocoledDaemonClient* dclient,
-                                                          const fastotv::protocol::response_t* resp) WARN_UNUSED_RESULT;
-
   virtual common::ErrnoError HandleRequestStreamsCommand(stream_client_t* pclient,
                                                          const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
   virtual common::ErrnoError HandleResponceStreamsCommand(stream_client_t* pclient,
@@ -91,15 +85,18 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
   void StopImpl();
 
   ChildStream* FindChildByID(fastotv::stream_id_t cid) const;
-  void BroadcastClients(const fastotv::protocol::request_t& req);
+  void BroadcastClients(const common::json::WsDataJson& req);
 
   common::ErrnoError DaemonDataReceived(ProtocoledDaemonClient* dclient) WARN_UNUSED_RESULT;
+  common::ErrnoError ProcessReceived(ProtocoledDaemonClient* hclient, const char* request, size_t req_len);
+
   common::ErrnoError StreamDataReceived(stream_client_t* pclient) WARN_UNUSED_RESULT;
 
   common::ErrnoError CreateChildStream(const serialized_stream_t& config_args) WARN_UNUSED_RESULT;
   common::ErrnoError CreateChildStreamImpl(const serialized_stream_t& config_args,
                                            const StreamInfo& sha) WARN_UNUSED_RESULT;
   common::ErrnoError StopChildStreamImpl(fastotv::stream_id_t sid, bool force) WARN_UNUSED_RESULT;
+  common::ErrnoError RestartChildStreamImpl(fastotv::stream_id_t sid) WARN_UNUSED_RESULT;
 
   // stream
   common::ErrnoError HandleRequestChangedSourcesStream(stream_client_t* pclient,
@@ -113,35 +110,30 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
 #endif
 
   common::ErrnoError HandleRequestClientStartStream(ProtocoledDaemonClient* dclient,
-                                                    const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                    const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientStopStream(ProtocoledDaemonClient* dclient,
-                                                   const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                   const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientRestartStream(ProtocoledDaemonClient* dclient,
-                                                      const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                      const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientGetLogStream(ProtocoledDaemonClient* dclient,
-                                                     const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                     const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientGetPipelineStream(ProtocoledDaemonClient* dclient,
-                                                          const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                          const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientGetConfigJsonStream(ProtocoledDaemonClient* dclient,
-                                                            const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
-  common::ErrnoError HandleRequestClientActivate(ProtocoledDaemonClient* dclient,
-                                                 const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
-  common::ErrnoError HandleRequestClientPingService(ProtocoledDaemonClient* dclient,
-                                                    const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                            const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientGetLogService(ProtocoledDaemonClient* dclient,
-                                                      const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
-  common::ErrnoError HandleRequestClientRestartService(ProtocoledDaemonClient* dclient,
-                                                       const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
+                                                      const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientStopService(ProtocoledDaemonClient* dclient,
-                                                    const fastotv::protocol::request_t* req) WARN_UNUSED_RESULT;
-
-  common::ErrnoError HandleResponcePingService(ProtocoledDaemonClient* dclient,
-                                               const fastotv::protocol::response_t* resp) WARN_UNUSED_RESULT;
+                                                    const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
+  common::ErrnoError HandleRequestClientRestartService(ProtocoledDaemonClient* dclient,
+                                                       const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
+  common::ErrnoError HandleRequestClientGetStats(ProtocoledDaemonClient* dclient,
+                                                 const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
 
   void CheckLicenseExpired(common::libev::IoLoop* server);
 
-  std::string MakeServiceStats(common::Optional<common::time64_t> expiration_time) const;
-
+  service::FullServiceInfo MakeServiceStats(common::time64_t expiration_time) const;
+  service::ServerInfo MakeServiceInfoStats() const;
   struct NodeStats;
 
   const Config config_;

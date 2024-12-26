@@ -14,8 +14,8 @@
 
 #pragma once
 
-#define STOP_STREAM "stop"
-#define RESTART_STREAM "restart"
+#define REQUEST_STOP_STREAM "stop"
+#define REQUEST_RESTART_STREAM "restart"
 
 #define CHANGED_SOURCES_STREAM "changed_source_stream"
 #define STATISTIC_STREAM "statistic_stream"

@@ -14,11 +14,10 @@
 
 #pragma once
 
-#include <string>
-
 #include <common/serializer/json_serializer.h>
-
 #include <fastotv/types.h>
+
+#include <string>
 
 namespace fastocloud {
 namespace server {

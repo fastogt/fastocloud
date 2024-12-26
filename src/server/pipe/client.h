@@ -14,9 +14,14 @@
 
 #pragma once
 
-#include <common/libev/pipe_client.h>
-
 #include <fastotv/protocol/protocol.h>
+
+namespace common {
+namespace libev {
+class PipeReadClient;
+class PipeWriteClient;
+}  // namespace libev
+}  // namespace common
 
 namespace fastocloud {
 namespace server {

@@ -14,15 +14,19 @@
 
 #pragma once
 
+#include <fastotv/protocol/types.h>
+
 #include <string>
 
-#include <fastotv/protocol/types.h>
+#include <common/json/json.h>
 
 #if defined(MACHINE_LEARNING)
 #include <fastotv/commands_info/ml/notification_info.h>
 #endif
 
+#include "server/daemon/commands_info/service/server_info.h"
 #include "server/daemon/commands_info/stream/quit_status_info.h"
+
 #include "stream_commands/commands_info/changed_sources_info.h"
 #include "stream_commands/commands_info/statistic_info.h"
 
@@ -34,20 +38,17 @@
 #define DAEMON_RESTART_STREAM "restart_stream"
 #define DAEMON_GET_LOG_STREAM "get_log_stream"
 #define DAEMON_GET_PIPELINE_STREAM "get_pipeline_stream"
+#define DAEMON_GET_CONFIG_JSON_STREAM "get_config_json_stream"
 
-#define DAEMON_ACTIVATE "activate_request"        // {"key": "XXXXXXXXXXXXXXXXXX"}
 #define DAEMON_STOP_SERVICE "stop_service"        // {"delay": 0 }
 #define DAEMON_RESTART_SERVICE "restart_service"  // {"delay": 0 }
+#define DAEMON_STATS_SERVICE "stats"
 
-#define DAEMON_GET_CONFIG_JSON_STREAM "get_config_json_stream"
-#define DAEMON_PING_SERVICE "ping_service"
 #define DAEMON_GET_LOG_SERVICE "get_log_service"  // {"path":"http://localhost/service/id"}
 
-#define DAEMON_SERVER_PING "ping_client"
-
 // Broadcast
-#define STREAM_CHANGED_SOURCES_STREAM "changed_source_stream"
-#define STREAM_STATISTIC_STREAM "statistic_stream"
+#define BROADCAST_CHANGED_SOURCES_STREAM "changed_source_stream"
+#define BROADCAST_STATISTIC_STREAM "statistic_stream"
 #define STREAM_QUIT_STATUS_STREAM "quit_status_stream"
 #if defined(MACHINE_LEARNING)
 #define STREAM_ML_NOTIFICATION_STREAM "ml_notification_stream"
@@ -58,15 +59,17 @@ namespace fastocloud {
 namespace server {
 
 // Broadcast
-common::Error ChangedSourcesStreamBroadcast(const ChangedSouresInfo& params, fastotv::protocol::request_t* req);
-common::Error StatisitcStreamBroadcast(const StatisticInfo& params, fastotv::protocol::request_t* req);
+common::Error ChangedSourcesStreamBroadcast(const ChangedSouresInfo& params,
+                                            common::json::WsDataJson* req) WARN_UNUSED_RESULT;
+common::Error StatisitcStreamBroadcast(const StatisticInfo& params, common::json::WsDataJson* req) WARN_UNUSED_RESULT;
 #if defined(MACHINE_LEARNING)
 common::Error MlNotificationStreamBroadcast(const fastotv::commands_info::ml::NotificationInfo& params,
                                             fastotv::protocol::request_t* req);
 #endif
-common::Error StatisitcServiceBroadcast(fastotv::protocol::serializet_params_t params,
-                                        fastotv::protocol::request_t* req);
-common::Error QuitStatusStreamBroadcast(const stream::QuitStatusInfo& params, fastotv::protocol::request_t* req);
+common::Error StatisitcServiceBroadcast(const service::ServerInfo& params,
+                                        common::json::WsDataJson* req) WARN_UNUSED_RESULT;
+
+common::Error QuitStatusStreamBroadcast(const stream::QuitStatusInfo& params, common::json::WsDataJson* req) WARN_UNUSED_RESULT;
 
 }  // namespace server
 }  // namespace fastocloud

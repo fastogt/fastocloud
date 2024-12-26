@@ -112,8 +112,9 @@ void HttpHandler::ProcessReceived(HttpClient* hclient, const char* request, size
 
   // keep alive
   common::http::header_t connection_field;
-  bool is_find_connection = hrequest.FindHeaderByKey("Connection", false, &connection_field);
-  bool IsKeepAlive = is_find_connection ? common::EqualsASCII(connection_field.value, "Keep-Alive", false) : false;
+  // bool is_find_connection = hrequest.FindHeaderByKey("Connection", false, &connection_field);
+  bool IsKeepAlive =
+      false;  // is_find_connection ? common::EqualsASCII(connection_field.value, "Keep-Alive", false) : false;
   const common::http::http_protocol protocol = hrequest.GetProtocol();
   const common::http::http_method method = hrequest.GetMethod();
   if (method == common::http::http_method::HM_GET || method == common::http::http_method::HM_HEAD) {
@@ -181,7 +182,7 @@ void HttpHandler::ProcessReceived(HttpClient* hclient, const char* request, size
     }
 
     if (hrequest.GetMethod() == common::http::http_method::HM_GET) {
-      common::ErrnoError err = hclient->SendFileByFd(protocol, file, sb.st_size);
+      common::ErrnoError err = hclient->SendFileByFd(protocol, file);
       if (err) {
         DEBUG_MSG_ERROR(err, common::logging::LOG_LEVEL_ERR);
       } else {

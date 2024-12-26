@@ -20,13 +20,7 @@ namespace fastocloud {
 namespace server {
 namespace stream {
 
-class RestartInfo : public StreamInfo {
- public:
-  typedef StreamInfo base_class;
-
-  RestartInfo();
-  explicit RestartInfo(const fastotv::stream_id_t& stream_id);
-};
+typedef StreamInfo RestartInfo;
 
 }  // namespace stream
 }  // namespace server

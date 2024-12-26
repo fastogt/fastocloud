@@ -14,61 +14,86 @@
 
 #pragma once
 
-#include <string>
-
-#include <common/daemon/client.h>
-#include <common/daemon/commands/license_info.h>
-#include <common/daemon/commands/ping_info.h>
+#include <common/daemon/commands/hhash_info.h>
+#include <common/json/json.h>
+#include <common/libev/websocket/websocket_client.h>
 #include <common/license/types.h>
-
 #include <fastotv/protocol/protocol.h>
 #include <fastotv/protocol/types.h>
+
+#include <string>
+
+#include "server/daemon/commands_info/service/server_info.h"
 
 namespace fastocloud {
 namespace server {
 
-class ProtocoledDaemonClient : public fastotv::protocol::ProtocolClient<common::daemon::DaemonClient> {
+class ProtocoledDaemonClient : public common::libev::websocket::WebSocketServerClient {
  public:
-  typedef fastotv::protocol::ProtocolClient<common::daemon::DaemonClient> base_class;
+  typedef common::libev::websocket::WebSocketServerClient base_class;
   ProtocoledDaemonClient(common::libev::IoLoop* server, const common::net::socket_info& info);
 
-  common::ErrnoError StopMe() WARN_UNUSED_RESULT;
-  common::ErrnoError RestartMe() WARN_UNUSED_RESULT;
+  bool IsVerified() const;
+  void SetVerified(bool verified, common::time64_t exp_time);
 
-  common::ErrnoError StopFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError StopSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::time64_t GetExpTime() const;
+  bool IsExpired() const;
+  bool HaveFullAccess() const;
 
-  common::ErrnoError Ping() WARN_UNUSED_RESULT;
-  common::ErrnoError Ping(const common::daemon::commands::ClientPingInfo& server_ping_info) WARN_UNUSED_RESULT;
+  common::http::http_protocol GetProtocol() const;
+  common::libev::http::HttpServerInfo GetServerInfo() const;
 
-  common::ErrnoError PongFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError Pong(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
-  common::ErrnoError Pong(fastotv::protocol::sequance_id_t id,
-                          const common::daemon::commands::ServerPingInfo& pong) WARN_UNUSED_RESULT;
+  common::ErrnoError StopMe(const common::uri::GURL& url) WARN_UNUSED_RESULT;
+  common::ErrnoError RestartMe(const common::uri::GURL& url) WARN_UNUSED_RESULT;
 
-  common::ErrnoError ActivateFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError ActivateSuccess(fastotv::protocol::sequance_id_t id, const std::string& result) WARN_UNUSED_RESULT;
+  common::ErrnoError StopFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError StopSuccess() WARN_UNUSED_RESULT;
 
-  common::ErrnoError GetLogServiceFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError GetLogServiceSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError RestartFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError RestartSuccess() WARN_UNUSED_RESULT;
 
-  common::ErrnoError GetLogStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError GetLogStreamSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError GetHardwareHashFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetHardwareHashSuccess(const common::daemon::commands::HardwareHashInfo& params)
+      WARN_UNUSED_RESULT;
 
-  common::ErrnoError GetPipeStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError GetPipeStreamSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError GetStatsFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetStatsSuccess(const service::FullServiceInfo& stats) WARN_UNUSED_RESULT;
 
-  common::ErrnoError StartStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError StartStreamSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError GetLogServiceFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetLogServiceSuccess(const std::string& path) WARN_UNUSED_RESULT;
 
-  common::ErrnoError ReStartStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError ReStartStreamSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError GetLogStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetLogStreamSuccess(const std::string& path) WARN_UNUSED_RESULT;
 
-  common::ErrnoError StopStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError StopStreamSuccess(fastotv::protocol::sequance_id_t id) WARN_UNUSED_RESULT;
+  common::ErrnoError GetPipeStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetPipeStreamSuccess(const std::string& path) WARN_UNUSED_RESULT;
 
-  common::ErrnoError UnknownMethodError(fastotv::protocol::sequance_id_t id,
-                                        const std::string& method) WARN_UNUSED_RESULT;
+  common::ErrnoError StartStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError StartStreamSuccess() WARN_UNUSED_RESULT;
+
+  common::ErrnoError ReStartStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError ReStartStreamSuccess() WARN_UNUSED_RESULT;
+
+  common::ErrnoError StopStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError StopStreamSuccess() WARN_UNUSED_RESULT;
+
+  common::ErrnoError GetConfigStreamFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetConfigStreamSuccess(const std::string& path) WARN_UNUSED_RESULT;
+
+  common::ErrnoError UnknownMethodError(common::http::http_method method, const std::string& route) WARN_UNUSED_RESULT;
+
+  common::ErrnoError Broadcast(const common::json::WsDataJson& request) WARN_UNUSED_RESULT;
+
+ private:
+  common::ErrnoError SendDataJson(common::http::http_status code, const common::json::DataJson& data);
+  common::ErrnoError SendErrorJson(common::http::http_status code, common::Error err);
+  common::ErrnoError SendHeadersInternal(common::http::http_status code,
+                                         const char* mime_type,
+                                         size_t* length,
+                                         time_t* mod);
+
+  bool is_verified_;
+  common::time64_t exp_time_;
 };
 
 }  // namespace server

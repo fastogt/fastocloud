@@ -14,14 +14,14 @@
 
 #pragma once
 
-#include <common/daemon/server.h>
+#include <common/libev/tcp/tcp_server.h>
 
 namespace fastocloud {
 namespace server {
 
-class DaemonServer : public common::daemon::DaemonServer {
+class DaemonServer : public common::libev::tcp::TcpServer {
  public:
-  typedef common::daemon::DaemonServer base_class;
+  typedef common::libev::tcp::TcpServer base_class;
   explicit DaemonServer(const common::net::HostAndPort& host, common::libev::IoLoopObserver* observer = nullptr);
 
  private:

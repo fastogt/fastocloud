@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include <string>
-
 #include <common/uri/gurl.h>
+
+#include <string>
 
 #include "server/daemon/commands_info/stream/stream_info.h"
 
@@ -27,12 +27,10 @@ namespace stream {
 class GetLogInfo : public StreamInfo {
  public:
   typedef StreamInfo base_class;
-  typedef common::uri::GURL url_t;
 
   GetLogInfo();
-  explicit GetLogInfo(const fastotv::stream_id_t& stream_id, const std::string& feedback_dir, const url_t& log_path);
+  explicit GetLogInfo(const fastotv::stream_id_t& stream_id, const std::string& feedback_dir);
 
-  url_t GetLogPath() const;
   std::string GetFeedbackDir() const;
 
  protected:
@@ -41,7 +39,6 @@ class GetLogInfo : public StreamInfo {
 
  private:
   std::string feedback_dir_;
-  url_t path_;
 };
 
 typedef GetLogInfo GetPipelineInfo;

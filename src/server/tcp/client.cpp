@@ -14,6 +14,8 @@
 
 #include "server/tcp/client.h"
 
+#include <common/libev/tcp/tcp_client.h>
+
 #include <memory>
 
 namespace fastocloud {

@@ -45,7 +45,7 @@ common::Error RestartStreamRequest(fastotv::protocol::sequance_id_t id, fastotv:
 
   fastotv::protocol::request_t lreq;
   lreq.id = id;
-  lreq.method = RESTART_STREAM;
+  lreq.method = REQUEST_RESTART_STREAM;
   *req = lreq;
   return common::Error();
 }
@@ -57,7 +57,7 @@ common::Error StopStreamRequest(fastotv::protocol::sequance_id_t id, fastotv::pr
 
   fastotv::protocol::request_t lreq;
   lreq.id = id;
-  lreq.method = STOP_STREAM;
+  lreq.method = REQUEST_STOP_STREAM;
   *req = lreq;
   return common::Error();
 }

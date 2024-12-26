@@ -76,7 +76,7 @@ int main(int argc, char** argv, char** envp) {
         return EXIT_FAILURE;
       }
 
-      err = fastocloud::server::ProcessSlaveWrapper::SendStopDaemonRequest(config);
+      err = fastocloud::server::ProcessSlaveWrapper::SendStopDaemonRequest(config.host);
       sleep(fastocloud::server::ProcessSlaveWrapper::cleanup_seconds + 1);
       if (err) {
         std::cerr << "Stop command failed error: " << err->GetDescription() << std::endl;
@@ -92,7 +92,7 @@ int main(int argc, char** argv, char** envp) {
         return EXIT_FAILURE;
       }
 
-      err = fastocloud::server::ProcessSlaveWrapper::SendRestartDaemonRequest(config);
+      err = fastocloud::server::ProcessSlaveWrapper::SendRestartDaemonRequest(config.host);
       sleep(fastocloud::server::ProcessSlaveWrapper::cleanup_seconds + 1);
       if (err) {
         std::cerr << "Reload command failed error: " << err->GetDescription() << std::endl;

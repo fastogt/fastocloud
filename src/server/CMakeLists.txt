@@ -109,7 +109,6 @@ SET(SERVER_DAEMON_HEADERS
   ${CMAKE_SOURCE_DIR}/src/server/daemon/client.h
   ${CMAKE_SOURCE_DIR}/src/server/daemon/server.h
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands.h
-  ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_factory.h
 
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_info/service/details/shots.h
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_info/service/server_info.h
@@ -126,7 +125,6 @@ SET(SERVER_DAEMON_SOURCES
   ${CMAKE_SOURCE_DIR}/src/server/daemon/client.cpp
   ${CMAKE_SOURCE_DIR}/src/server/daemon/server.cpp
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands.cpp
-  ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_factory.cpp
 
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_info/service/details/shots.cpp
   ${CMAKE_SOURCE_DIR}/src/server/daemon/commands_info/service/server_info.cpp

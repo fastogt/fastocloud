@@ -22,9 +22,10 @@ namespace server {
 
 #if defined(OS_POSIX)
 common::ErrnoError CreatePipe(common::net::socket_descr_t* read_client_fd,
-                              common::net::socket_descr_t* write_client_fd);
+                              common::net::socket_descr_t* write_client_fd) WARN_UNUSED_RESULT;
 #endif
-common::ErrnoError CreateSocketPair(common::net::socket_descr_t* parent_sock, common::net::socket_descr_t* child_sock);
+common::ErrnoError CreateSocketPair(common::net::socket_descr_t* parent_sock,
+                                    common::net::socket_descr_t* child_sock) WARN_UNUSED_RESULT;
 
 }  // namespace server
 }  // namespace fastocloud

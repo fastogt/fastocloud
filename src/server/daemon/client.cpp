@@ -12,259 +12,326 @@
     along with fastocloud.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <memory>
-
 #include "server/daemon/client.h"
 
-#include "server/daemon/commands_factory.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <common/json/json.h>
+
+#include <common/daemon/commands/restart_info.h>
+#include <common/daemon/commands/stop_info.h>
+
+namespace {
+const std::string kErrorInvalid = "{\"error\":{\"code\":-1, \"message\":\"NOTREACHED\"}}";
+const auto kDataOK = common::json::MakeSuccessDataJson();
+}  // namespace
 
 namespace fastocloud {
 namespace server {
 
 ProtocoledDaemonClient::ProtocoledDaemonClient(common::libev::IoLoop* server, const common::net::socket_info& info)
-    : base_class(std::make_shared<fastotv::protocol::FastoTVCompressor>(), server, info) {}
+    : base_class(server, info), is_verified_(false), exp_time_(0) {}
 
-common::ErrnoError ProtocoledDaemonClient::StopMe() {
-  const common::daemon::commands::StopInfo stop_req;
-  fastotv::protocol::request_t req;
-  common::Error err_ser = StopServiceRequest(NextRequestID(), stop_req, &req);
+bool ProtocoledDaemonClient::IsVerified() const {
+  return is_verified_;
+}
+
+common::time64_t ProtocoledDaemonClient::GetExpTime() const {
+  return exp_time_;
+}
+
+void ProtocoledDaemonClient::SetVerified(bool verified, common::time64_t exp_time) {
+  is_verified_ = verified;
+  exp_time_ = exp_time;
+}
+
+bool ProtocoledDaemonClient::IsExpired() const {
+  return exp_time_ < common::time::current_utc_mstime();
+}
+
+bool ProtocoledDaemonClient::HaveFullAccess() const {
+  return IsVerified() && !IsExpired();
+}
+
+common::http::http_protocol ProtocoledDaemonClient::GetProtocol() const {
+  return common::http::HP_1_0;
+}
+
+common::libev::http::HttpServerInfo ProtocoledDaemonClient::GetServerInfo() const {
+  return common::libev::http::HttpServerInfo();
+}
+
+common::ErrnoError ProtocoledDaemonClient::StopMe(const common::uri::GURL& url) {
+  const common::daemon::commands::StopInfo params;
+  std::string result;
+  common::Error err_ser = params.SerializeToString(&result);
   if (err_ser) {
     return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
   }
 
-  return WriteRequest(req);
+  return PostJson(url, result.c_str(), result.size(), false);
 }
 
-common::ErrnoError ProtocoledDaemonClient::RestartMe() {
-  const common::daemon::commands::RestartInfo stop_req;
-  fastotv::protocol::request_t req;
-  common::Error err_ser = RestartServiceRequest(NextRequestID(), stop_req, &req);
+common::ErrnoError ProtocoledDaemonClient::Broadcast(const common::json::WsDataJson& request) {
+  std::string result;
+  ignore_result(request.SerializeToString(&result));
+  return SendFrame(result.c_str(), result.size());
+}
+
+common::ErrnoError ProtocoledDaemonClient::RestartMe(const common::uri::GURL& url) {
+  const common::daemon::commands::RestartInfo params;
+  std::string result;
+  common::Error err_ser = params.SerializeToString(&result);
   if (err_ser) {
     return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
   }
-
-  return WriteRequest(req);
+  return PostJson(url, result.c_str(), result.size(), false);
 }
 
-common::ErrnoError ProtocoledDaemonClient::StopFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StopServiceResponseFail(id, error_str, &resp);
+common::ErrnoError ProtocoledDaemonClient::StopFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::StopSuccess() {
+  return SendDataJson(common::http::HS_OK, kDataOK);
+}
+
+common::ErrnoError ProtocoledDaemonClient::RestartFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::RestartSuccess() {
+  return SendDataJson(common::http::HS_OK, kDataOK);
+}
+
+common::ErrnoError ProtocoledDaemonClient::GetHardwareHashFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::GetHardwareHashSuccess(
+    const common::daemon::commands::HardwareHashInfo& params) {
+  json_object* jrequest_init = nullptr;
+  common::Error err_ser = params.Serialize(&jrequest_init);
   if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+    return GetHardwareHashFail(common::http::HS_INTERNAL_ERROR, err_ser);
   }
 
-  return WriteResponse(resp);
-}
-
-common::ErrnoError ProtocoledDaemonClient::StopSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StopServiceResponseSuccess(id, &resp);
+  std::string result;
+  common::json::DataJson js = common::json::MakeSuccessDataJson(jrequest_init);  // take ownerships
+  err_ser = js.SerializeToString(&result);
   if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+    return GetHardwareHashFail(common::http::HS_INTERNAL_ERROR, err_ser);
   }
 
-  return WriteResponse(resp);
+  return SendDataJson(common::http::HS_OK, js);
 }
 
-common::ErrnoError ProtocoledDaemonClient::Ping() {
-  common::daemon::commands::ClientPingInfo server_ping_info;
-  return Ping(server_ping_info);
+common::ErrnoError ProtocoledDaemonClient::GetStatsFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::Ping(const common::daemon::commands::ClientPingInfo& server_ping_info) {
-  fastotv::protocol::request_t ping_request;
-  common::Error err_ser = PingRequest(NextRequestID(), server_ping_info, &ping_request);
+common::ErrnoError ProtocoledDaemonClient::GetStatsSuccess(const service::FullServiceInfo& stats) {
+  json_object* jrequest_init = nullptr;
+  common::Error err_ser = stats.Serialize(&jrequest_init);
   if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+    return GetHardwareHashFail(common::http::HS_INTERNAL_ERROR, err_ser);
   }
 
-  return WriteRequest(ping_request);
-}
-
-common::ErrnoError ProtocoledDaemonClient::PongFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = PingServiceResponseFail(id, error_str, &resp);
+  std::string result;
+  common::json::DataJson js = common::json::MakeSuccessDataJson(jrequest_init);  // take ownerships
+  err_ser = js.SerializeToString(&result);
   if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+    return GetStatsFail(common::http::HS_INTERNAL_ERROR, err_ser);
   }
 
-  return WriteResponse(resp);
+  return SendDataJson(common::http::HS_OK, js);
 }
 
-common::ErrnoError ProtocoledDaemonClient::Pong(fastotv::protocol::sequance_id_t id) {
-  common::daemon::commands::ServerPingInfo server_ping_info;
-  return Pong(id, server_ping_info);
+common::ErrnoError ProtocoledDaemonClient::GetLogServiceFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::Pong(fastotv::protocol::sequance_id_t id,
-                                                const common::daemon::commands::ServerPingInfo& pong) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = PingServiceResponseSuccess(id, pong, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-  return WriteResponse(resp);
-}
-
-common::ErrnoError ProtocoledDaemonClient::ActivateFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = ActivateResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+common::ErrnoError ProtocoledDaemonClient::GetLogServiceSuccess(const std::string& path) {
+  const char* file_path_str_ptr = path.c_str();
+  struct stat sb;
+  if (stat(file_path_str_ptr, &sb) < 0) {
+    return GetLogServiceFail(common::http::HS_FORBIDDEN, common::make_error("File not found."));
   }
 
-  return WriteResponse(resp);
-}
-
-common::ErrnoError ProtocoledDaemonClient::ActivateSuccess(fastotv::protocol::sequance_id_t id,
-                                                           const std::string& result) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = ActivateResponseSuccess(id, result, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+  if (S_ISDIR(sb.st_mode)) {
+    return GetLogServiceFail(common::http::HS_FORBIDDEN, common::make_error("Bad filename."));
   }
 
-  return WriteResponse(resp);
-}
-
-common::ErrnoError ProtocoledDaemonClient::GetLogServiceFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetLogServiceResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+  int file = open(file_path_str_ptr, O_RDONLY);
+  if (file == INVALID_DESCRIPTOR) { /* open the file for reading */
+    return GetLogServiceFail(common::http::HS_FORBIDDEN, common::make_error("File is protected."));
   }
 
-  return WriteResponse(resp);
-}
-
-common::ErrnoError ProtocoledDaemonClient::GetLogServiceSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetLogServiceResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+  size_t cast = sb.st_size;
+  common::ErrnoError err = SendHeadersInternal(common::http::HS_OK, "text/plain", &cast, &sb.st_mtime);
+  if (err) {
+    ::close(file);
+    return GetLogServiceFail(common::http::HS_INTERNAL_ERROR, common::make_error(err->GetDescription()));
   }
 
-  return WriteResponse(resp);
+  err = SendFileByFd(file, sb.st_size);
+  ::close(file);
+  return err;
 }
 
-common::ErrnoError ProtocoledDaemonClient::GetLogStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetLogStreamResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::GetLogStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::GetLogStreamSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetLogStreamResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+common::ErrnoError ProtocoledDaemonClient::GetLogStreamSuccess(const std::string& path) {
+  const char* file_path_str_ptr = path.c_str();
+  struct stat sb;
+  if (stat(file_path_str_ptr, &sb) < 0) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File not found."));
   }
 
-  return WriteResponse(resp);
+  if (S_ISDIR(sb.st_mode)) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("Bad filename."));
+  }
+
+  int file = open(file_path_str_ptr, O_RDONLY);
+  if (file == INVALID_DESCRIPTOR) { /* open the file for reading */
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File is protected."));
+  }
+
+  size_t cast = sb.st_size;
+  common::ErrnoError err = SendHeadersInternal(common::http::HS_OK, "text/plain", &cast, &sb.st_mtime);
+  if (err) {
+    ::close(file);
+    return GetLogStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error(err->GetDescription()));
+  }
+
+  err = SendFileByFd(file, sb.st_size);
+  ::close(file);
+  return err;
 }
 
-common::ErrnoError ProtocoledDaemonClient::GetPipeStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetPipeStreamResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::GetPipeStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::GetPipeStreamSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = GetPipeStreamResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+common::ErrnoError ProtocoledDaemonClient::GetPipeStreamSuccess(const std::string& path) {
+  const char* file_path_str_ptr = path.c_str();
+  struct stat sb;
+  if (stat(file_path_str_ptr, &sb) < 0) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File not found."));
   }
 
-  return WriteResponse(resp);
+  if (S_ISDIR(sb.st_mode)) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("Bad filename."));
+  }
+
+  int file = open(file_path_str_ptr, O_RDONLY);
+  if (file == INVALID_DESCRIPTOR) { /* open the file for reading */
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File is protected."));
+  }
+
+  size_t cast = sb.st_size;
+  common::ErrnoError err = SendHeadersInternal(common::http::HS_OK, "text/plain", &cast, &sb.st_mtime);
+  if (err) {
+    ::close(file);
+    return GetLogStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error(err->GetDescription()));
+  }
+
+  err = SendFileByFd(file, sb.st_size);
+  ::close(file);
+  return err;
 }
 
-common::ErrnoError ProtocoledDaemonClient::StartStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StartStreamResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::GetConfigStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::StartStreamSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StartStreamResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+common::ErrnoError ProtocoledDaemonClient::GetConfigStreamSuccess(const std::string& path) {
+  const char* file_path_str_ptr = path.c_str();
+  struct stat sb;
+  if (stat(file_path_str_ptr, &sb) < 0) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File not found."));
   }
 
-  return WriteResponse(resp);
+  if (S_ISDIR(sb.st_mode)) {
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("Bad filename."));
+  }
+
+  int file = open(file_path_str_ptr, O_RDONLY);
+  if (file == INVALID_DESCRIPTOR) { /* open the file for reading */
+    return GetLogStreamFail(common::http::HS_FORBIDDEN, common::make_error("File is protected."));
+  }
+
+  size_t cast = sb.st_size;
+  common::ErrnoError err =
+      SendHeadersInternal(common::http::HS_OK, "text/plain", &cast, &sb.st_mtime);  // "application/json"
+  if (err) {
+    ::close(file);
+    return GetLogStreamFail(common::http::HS_INTERNAL_ERROR, common::make_error(err->GetDescription()));
+  }
+
+  err = SendFileByFd(file, sb.st_size);
+  ::close(file);
+  return err;
 }
 
-common::ErrnoError ProtocoledDaemonClient::ReStartStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = RestartStreamResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::StartStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::ReStartStreamSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = RestartStreamResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::StartStreamSuccess() {
+  return SendDataJson(common::http::HS_OK, kDataOK);
 }
 
-common::ErrnoError ProtocoledDaemonClient::StopStreamFail(fastotv::protocol::sequance_id_t id, common::Error err) {
-  const std::string error_str = err->GetDescription();
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StopStreamResponseFail(id, error_str, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::ReStartStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
 }
 
-common::ErrnoError ProtocoledDaemonClient::StopStreamSuccess(fastotv::protocol::sequance_id_t id) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = StopStreamResponseSuccess(id, &resp);
-  if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
-  }
-
-  return WriteResponse(resp);
+common::ErrnoError ProtocoledDaemonClient::ReStartStreamSuccess() {
+  return SendDataJson(common::http::HS_OK, kDataOK);
 }
 
-common::ErrnoError ProtocoledDaemonClient::UnknownMethodError(fastotv::protocol::sequance_id_t id,
-                                                              const std::string& method) {
-  fastotv::protocol::response_t resp;
-  common::Error err_ser = UnknownMethodResponse(id, method, &resp);
+common::ErrnoError ProtocoledDaemonClient::StopStreamFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::StopStreamSuccess() {
+  return SendDataJson(common::http::HS_OK, kDataOK);
+}
+
+common::ErrnoError ProtocoledDaemonClient::UnknownMethodError(common::http::http_method method,
+                                                              const std::string& route) {
+  common::Error err =
+      common::make_error(common::MemSPrintf("not handled %s for route: %s", common::ConvertToString(method), route));
+  return SendErrorJson(common::http::HS_NOT_FOUND, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::SendHeadersInternal(common::http::http_status code,
+                                                               const char* mime_type,
+                                                               size_t* length,
+                                                               time_t* mod) {
+  return SendHeaders(GetProtocol(), code, {}, mime_type, length, mod, false, GetServerInfo());
+}
+
+common::ErrnoError ProtocoledDaemonClient::SendErrorJson(common::http::http_status code, common::Error err) {
+  auto errj = common::json::ErrorJson(common::json::MakeErrorJsonMessage(code, err));
+  std::string result = kErrorInvalid;
+  ignore_result(errj.SerializeToString(&result));
+  return SendJson(GetProtocol(), code, {}, result.c_str(), result.size(), false, GetServerInfo());
+}
+
+common::ErrnoError ProtocoledDaemonClient::SendDataJson(common::http::http_status code,
+                                                        const common::json::DataJson& data) {
+  std::string result;
+  common::Error err_ser = data.SerializeToString(&result);
   if (err_ser) {
-    return common::make_errno_error(err_ser->GetDescription(), EAGAIN);
+    return SendErrorJson(common::http::HS_INTERNAL_ERROR, err_ser);
   }
 
-  return WriteResponse(resp);
+  return SendJson(GetProtocol(), code, {}, result.c_str(), result.size(), false, GetServerInfo());
 }
 
 }  // namespace server

@@ -400,9 +400,9 @@ void StreamController::ChildStatusChanged(common::libev::IoChild* child, int sta
 
 common::ErrnoError StreamController::HandleRequestCommand(common::libev::IoClient* client,
                                                           const fastotv::protocol::request_t* req) {
-  if (req->method == STOP_STREAM) {
+  if (req->method == REQUEST_STOP_STREAM) {
     return HandleRequestStopStream(client, req);
-  } else if (req->method == RESTART_STREAM) {
+  } else if (req->method == REQUEST_RESTART_STREAM) {
     return HandleRequestRestartStream(client, req);
   }
 
