@@ -19,7 +19,7 @@ build:
     - ./build.py release
 
   tags:
-    - fastogt
+    - fastocloud
 
 build_package:
   stage: build_package
@@ -47,4 +47,4 @@ build_package:
       - $CI_PROJECT_DIR/build/build_releases/*.tar.gz
 
   tags:
-    - fastogt
+    - fastocloud
