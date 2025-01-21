@@ -4,13 +4,13 @@
 #### [Technical details](https://fastogt.com/static/projects/all_presentations/media_server.pdf)
 
 **FastoCloud Media** is a reliable server software solution for streaming video content of any type and complexity. It enables users to host live video broadcasts using IP/NDI/Analog cameras, provide on-demand video access, and seamlessly integrate video streaming into various projects such as intercom systems, tv streaming, ott, webinars, recording streams and many other. For managment **FastoCloud** nodes can be used:
-- [**UI**](https://gitlab.com/fastcloud/wsfastocloud)
+- [**UI**](https://gitlab.com/fastocloud/wsfastocloud)
 - [**API**](https://fastogt.stoplight.io/docs/fastocloud-api/6dbac8c0c0a0f-fasto-cloud-community-pro-ml-versions)
 
-Software can start as [**Linux**](https://fastocloud.com/downloads.html) service or in [**Docker**](https://hub.docker.com/repository/docker/fastcloud/fastocloud).
+Software can start as [**Linux**](https://fastocloud.com/downloads.html) service or in [**Docker**](https://hub.docker.com/repository/docker/fastocloud/fastocloud).
 
 Have 3 types of services:
-- [**[COM]**](https://gitlab.com/fastcloud/fastocloud) Community version
+- [**[COM]**](https://gitlab.com/fastocloud/fastocloud) Community version
 - [**[PRO]**](https://fastocloud.com/downloads.html) Professional version
 - [**[ML]**](https://fastocloud.com/downloads.html) Computer vision/AI/ML version
 
@@ -70,8 +70,8 @@ Have 3 types of services:
 * Tokens protected urls
 * DRM **[PRO]**
 * [Amazon Kinesis Video Streams integration](https://aws.amazon.com/kinesis/video-streams)
-* [Admin panel](https://gitlab.com/fastcloud/wsfastocloud)
-* [Docker Image](https://hub.docker.com/r/fastcloud/fastocloud)
+* [Admin panel](https://gitlab.com/fastocloud/wsfastocloud)
+* [Docker Image](https://hub.docker.com/r/fastocloud/fastocloud)
 
 ### Use cases:
 * Broadcast media content
@@ -98,12 +98,12 @@ Have 3 types of services:
 
 Visit our site: [fastocloud.com](https://fastocloud.com)
 
-[Admin panel](https://gitlab.com/fastcloud/wsfastocloud)
+[Admin panel](https://gitlab.com/fastocloud/wsfastocloud)
 ==========
 ### Dashboard page:
-![](https://gitlab.com/fastcloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web.png)
-![](https://gitlab.com/fastcloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_live.png)
-![](https://gitlab.com/fastcloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_vod.png)
+![](https://gitlab.com/fastocloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web.png)
+![](https://gitlab.com/fastocloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_live.png)
+![](https://gitlab.com/fastocloud/wsfastocloud/raw/main/docs/images/fastocloud_one_web_store_vod.png)
 
 [Demo Admin panel](https://ws.fastocloud.com) **Note: Press connect**
 
@@ -122,7 +122,7 @@ Install documentation: [Install FastoCloud](https://github.com/fastogt/fastoclou
 License
 =======
 
-Copyright (C) 2018-2025 [FastoCloud](https://fastcloud.com)
+Copyright (C) 2018-2025 [FastoCloud](https://fastocloud.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 as 
