@@ -26,7 +26,6 @@
 #include "stream/streams/encoding/rtsp_encoding_stream.h"
 #include "stream/streams/relay/playlist_relay_stream.h"
 #include "stream/streams/relay/rtsp_relay_stream.h"
-#include "stream/streams/test/test_life_stream.h"
 #include "stream/streams/test/test_stream.h"
 #include "stream/streams/timeshift/catchup_stream.h"
 #include "stream/streams/timeshift/timeshift_player_stream.h"
@@ -116,9 +115,6 @@ IBaseStream* StreamsFactory::CreateStream(const Config* config,
   } else if (type == fastotv::CATCHUP) {
     const streams::TimeshiftConfig* tconfig = static_cast<const streams::TimeshiftConfig*>(config);
     return new streams::CatchupStream(tconfig, tinfo, client, stats);
-  } else if (type == fastotv::TEST_LIFE) {
-    const streams::RelayConfig* rconfig = static_cast<const streams::RelayConfig*>(config);
-    return new streams::test::TestLifeStream(rconfig, client, stats);
   } else if (type == fastotv::VOD_RELAY) {
     const streams::VodRelayConfig* vconfig = static_cast<const streams::VodRelayConfig*>(config);
     if (!vconfig->GetLoop()) {

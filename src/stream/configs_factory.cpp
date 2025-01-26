@@ -103,7 +103,7 @@ common::Error make_config(const StreamConfig& config_args, Config** config) {
     aconf.SetLoop(loop);
   }
 
-  if (stream_type == fastotv::RELAY || stream_type == fastotv::TIMESHIFT_PLAYER || stream_type == fastotv::TEST_LIFE ||
+  if (stream_type == fastotv::RELAY || stream_type == fastotv::TIMESHIFT_PLAYER ||
       stream_type == fastotv::VOD_RELAY || stream_type == fastotv::COD_RELAY) {
     streams::RelayConfig* rconfig = new streams::RelayConfig(aconf);
 

@@ -36,7 +36,7 @@ bool ChildStream::IsCOD() const {
 
 void ChildStream::CleanUp() {
   if (conf_.type == fastotv::VOD_ENCODE || conf_.type == fastotv::VOD_RELAY || conf_.type == fastotv::CATCHUP ||
-      conf_.type == fastotv::TIMESHIFT_RECORDER || conf_.type == fastotv::TEST_LIFE) {
+      conf_.type == fastotv::TIMESHIFT_RECORDER) {
     return;
   }
 

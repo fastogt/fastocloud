@@ -79,7 +79,6 @@ SET(STREAM_BUILDERS_HEADERS
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/timeshift/timeshift_player_stream_builder.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/timeshift/timeshift_recorder_stream_builder.h
 
-  ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/test/test_life_stream_builder.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/test/test_input_stream_builder.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/display/display_input_stream_builder.h
 )
@@ -104,7 +103,6 @@ SET(STREAM_BUILDERS_SOURCES
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/timeshift/timeshift_player_stream_builder.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/timeshift/timeshift_recorder_stream_builder.cpp
 
-  ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/test/test_life_stream_builder.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/test/test_input_stream_builder.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/builders/display/display_input_stream_builder.cpp
 )
@@ -131,7 +129,6 @@ SET(STREAMS_HEADERS
   ${CMAKE_SOURCE_DIR}/src/stream/streams/timeshift/itimeshift_recorder_stream.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/timeshift/timeshift_recorder_stream.h
 
-  ${CMAKE_SOURCE_DIR}/src/stream/streams/test/test_life_stream.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/test/test_stream.h
   ${CMAKE_SOURCE_DIR}/src/stream/streams/display/display_stream.h
 
@@ -160,7 +157,6 @@ SET(STREAMS_SOURCES
   ${CMAKE_SOURCE_DIR}/src/stream/streams/timeshift/itimeshift_recorder_stream.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/timeshift/timeshift_recorder_stream.cpp
 
-  ${CMAKE_SOURCE_DIR}/src/stream/streams/test/test_life_stream.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/test/test_stream.cpp
   ${CMAKE_SOURCE_DIR}/src/stream/streams/display/display_stream.cpp
 
