@@ -1,7 +1,7 @@
 ### FastoCloud Media
 [![Join the chat at https://discord.com/invite/cnUXsws](https://img.shields.io/discord/584773460585086977?label=discord)](https://discord.gg/Fxbfx3d5dV)
 
-#### [Technical details](https://fastogt.com/static/projects/all_presentations/media_server.pdf)
+#### [Technical details](https://docs.fastocloud.com/all_presentations/media_server.pdf)
 
 **FastoCloud Media** is a reliable server software solution for streaming video content of any type and complexity. It enables users to host live video broadcasts using IP/NDI/Analog cameras, provide on-demand video access, and seamlessly integrate video streaming into various projects such as intercom systems, tv streaming, ott, webinars, recording streams and many other. For managment **FastoCloud** nodes can be used:
 - [**UI**](https://gitlab.com/fastocloud/wsfastocloud)
