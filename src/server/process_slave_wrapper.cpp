@@ -62,6 +62,7 @@
 
 namespace {
 
+const auto kServicePriceInUSDPerSec = 25.0 / ((365.25 / 12) * 24 * 3600);  // 25 USD price
 const auto kClosedDaemon = common::make_errno_error("Connection closed", EAGAIN);
 
 common::Optional<common::file_system::ascii_file_string_path> MakeStreamConfigJsonPath(
@@ -206,6 +207,7 @@ struct ProcessSlaveWrapper::NodeStats {
       : prev(),
         prev_nshot(),
         timestamp(common::time::current_utc_mstime()),
+        balance(0.0),
         gpu_load_nvidia_(0.0),
         perf_monitor_nvidia_(nullptr),
         perf_monitor_nvidia_thread_(),
@@ -273,6 +275,7 @@ struct ProcessSlaveWrapper::NodeStats {
   service::CpuShot prev;
   service::NetShot prev_nshot;
   fastotv::timestamp_t timestamp;
+  service::ServerInfo::cost_t balance;
 
  private:
   double gpu_load_nvidia_;
@@ -518,6 +521,7 @@ int ProcessSlaveWrapper::Exec(int argc, char** argv) {
   node_stats_->prev = service::GetMachineCpuShot();
   node_stats_->prev_nshot = service::GetMachineNetShot();
   node_stats_->timestamp = common::time::current_utc_mstime();
+  node_stats_->balance = 0.0;
 
   INFO_LOG() << "DaemonServer have started address: " << common::ConvertToString(server->GetHost());
   res = server->Exec();
@@ -734,6 +738,8 @@ common::ErrnoError ProcessSlaveWrapper::ProcessReceived(ProtocoledDaemonClient* 
     if (method == common::http::http_method::HM_GET) {
       if (route == "/" DAEMON_STATS_SERVICE) {  // +
         return HandleRequestClientGetStats(hclient, hrequest);
+      } else if (route == "/" DAEMON_BALANCE_SERVICE) {  // +
+        return HandleRequestClientGetBalance(hclient, hrequest);
       } else if (route == "/" DAEMON_GET_LOG_SERVICE) {  // +
         return HandleRequestClientGetLogService(hclient, hrequest);
       } else if (route == "/" WS_UPDATES) {
@@ -1253,6 +1259,19 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetStats(ProtocoledDa
   return dclient->GetStatsSuccess(MakeServiceStats(dclient->GetExpTime()));
 }
 
+common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetBalance(ProtocoledDaemonClient* dclient,
+                                                                      const common::http::HttpRequest& req) {
+  CHECK(loop_->IsLoopThread());
+
+  common::ErrnoError errn = ParseGetClientRequest(dclient, req);
+  if (errn) {
+    ignore_result(dclient->GetBalanceFail(common::http::HS_BAD_REQUEST, common::make_error_from_errno(errn)));
+    return errn;
+  }
+
+  return dclient->GetBalanceSuccess(service::BalanceInfo(node_stats_->balance));
+}
+
 common::ErrnoError ProcessSlaveWrapper::HandleRequestStreamsCommand(stream_client_t* pclient,
                                                                     const fastotv::protocol::request_t* req) {
   if (req->method == BROADCAST_CHANGED_SOURCES_STREAM) {
@@ -1346,10 +1365,13 @@ service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
   service::OnlineUsers online(daemons_client_count, static_cast<HttpHandler*>(http_handler_)->GetOnlineClients(),
                               static_cast<HttpHandler*>(vods_handler_)->GetOnlineClients(),
                               static_cast<HttpHandler*>(cods_handler_)->GetOnlineClients());
+
+  auto cost = kServicePriceInUSDPerSec * ts_diff;
+  node_stats_->balance += cost;
   service::ServerInfo stat(cpu_load, node_stats_->CalcGPULoad(), uptime_str, mem_shot.ram_bytes_total,
                            mem_shot.ram_bytes_free, hdd_shot.hdd_bytes_total, hdd_shot.hdd_bytes_free,
                            bytes_recv / ts_diff, bytes_send / ts_diff, sshot.uptime, current_time, online,
-                           next_nshot.bytes_recv, next_nshot.bytes_send);
+                           next_nshot.bytes_recv, next_nshot.bytes_send, cost);
 
   return stat;
 }

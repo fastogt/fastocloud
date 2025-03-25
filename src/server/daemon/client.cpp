@@ -149,6 +149,27 @@ common::ErrnoError ProtocoledDaemonClient::GetStatsSuccess(const service::FullSe
   return SendDataJson(common::http::HS_OK, js);
 }
 
+common::ErrnoError ProtocoledDaemonClient::GetBalanceFail(common::http::http_status code, common::Error err) {
+  return SendErrorJson(code, err);
+}
+
+common::ErrnoError ProtocoledDaemonClient::GetBalanceSuccess(const service::BalanceInfo& balance) {
+  json_object* jrequest_init = nullptr;
+  common::Error err_ser = balance.Serialize(&jrequest_init);
+  if (err_ser) {
+    return GetHardwareHashFail(common::http::HS_INTERNAL_ERROR, err_ser);
+  }
+
+  std::string result;
+  common::json::DataJson js = common::json::MakeSuccessDataJson(jrequest_init);  // take ownerships
+  err_ser = js.SerializeToString(&result);
+  if (err_ser) {
+    return GetStatsFail(common::http::HS_INTERNAL_ERROR, err_ser);
+  }
+
+  return SendDataJson(common::http::HS_OK, js);
+}
+
 common::ErrnoError ProtocoledDaemonClient::GetLogServiceFail(common::http::http_status code, common::Error err) {
   return SendErrorJson(code, err);
 }

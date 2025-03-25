@@ -58,7 +58,8 @@ class ServerInfo : public fastotv::commands_info::MachineInfo {
              fastotv::timestamp_t timestamp,
              const OnlineUsers& online_users,
              size_t net_total_bytes_recv,
-             size_t net_total_bytes_send);
+             size_t net_total_bytes_send,
+             cost_t cost);
 
   OnlineUsers GetOnlineUsers() const;
 
@@ -68,6 +69,24 @@ class ServerInfo : public fastotv::commands_info::MachineInfo {
 
  private:
   OnlineUsers online_users_;
+};
+
+class BalanceInfo : public common::serializer::JsonSerializer<BalanceInfo> {
+ public:
+  typedef JsonSerializer<BalanceInfo> base_class;
+  typedef ServerInfo::cost_t balance_t;
+
+  BalanceInfo();
+  BalanceInfo(balance_t balance);
+
+  balance_t GetBalance() const;
+
+ protected:
+  common::Error DoDeSerialize(json_object* serialized) override;
+  common::Error SerializeFields(json_object* out) const override;
+
+ private:
+  balance_t balance_;
 };
 
 class FullServiceInfo : public ServerInfo {

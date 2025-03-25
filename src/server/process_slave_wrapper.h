@@ -129,6 +129,8 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
                                                        const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
   common::ErrnoError HandleRequestClientGetStats(ProtocoledDaemonClient* dclient,
                                                  const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
+  common::ErrnoError HandleRequestClientGetBalance(ProtocoledDaemonClient* dclient,
+                                                   const common::http::HttpRequest& req) WARN_UNUSED_RESULT;
 
   void CheckLicenseExpired(common::libev::IoLoop* server);
 

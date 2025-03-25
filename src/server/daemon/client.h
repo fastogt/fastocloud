@@ -59,6 +59,9 @@ class ProtocoledDaemonClient : public common::libev::websocket::WebSocketServerC
   common::ErrnoError GetStatsFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
   common::ErrnoError GetStatsSuccess(const service::FullServiceInfo& stats) WARN_UNUSED_RESULT;
 
+  common::ErrnoError GetBalanceFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
+  common::ErrnoError GetBalanceSuccess(const service::BalanceInfo& balance) WARN_UNUSED_RESULT;
+
   common::ErrnoError GetLogServiceFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
   common::ErrnoError GetLogServiceSuccess(const std::string& path) WARN_UNUSED_RESULT;
 

@@ -43,6 +43,7 @@
 #define DAEMON_STOP_SERVICE "stop_service"        // {"delay": 0 }
 #define DAEMON_RESTART_SERVICE "restart_service"  // {"delay": 0 }
 #define DAEMON_STATS_SERVICE "stats"
+#define DAEMON_BALANCE_SERVICE "balance"
 
 #define DAEMON_GET_LOG_SERVICE "get_log_service"  // {"path":"http://localhost/service/id"}
 

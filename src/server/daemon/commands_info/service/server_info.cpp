@@ -44,6 +44,8 @@
 #define ONLINE_USERS_VODS_FIELD "vods"
 #define ONLINE_USERS_CODS_FIELD "cods"
 
+#define BALANCE_FIELD "balance"
+
 namespace fastocloud {
 namespace server {
 namespace service {
@@ -93,7 +95,8 @@ ServerInfo::ServerInfo(cpu_load_t cpu_load,
                        fastotv::timestamp_t timestamp,
                        const OnlineUsers& online_users,
                        size_t net_total_bytes_recv,
-                       size_t net_total_bytes_send)
+                       size_t net_total_bytes_send,
+                       cost_t cost)
     : base_class(cpu_load,
                  gpu_load,
                  load_average,
@@ -106,7 +109,8 @@ ServerInfo::ServerInfo(cpu_load_t cpu_load,
                  uptime,
                  timestamp,
                  net_total_bytes_recv,
-                 net_total_bytes_send),
+                 net_total_bytes_send,
+                 cost),
       online_users_(online_users) {}
 
 common::Error ServerInfo::SerializeFields(json_object* out) const {
@@ -147,6 +151,30 @@ common::Error ServerInfo::DoDeSerialize(json_object* serialized) {
 
 OnlineUsers ServerInfo::GetOnlineUsers() const {
   return online_users_;
+}
+
+BalanceInfo::BalanceInfo() : BalanceInfo(0.0) {}
+
+BalanceInfo::BalanceInfo(balance_t balance) : balance_(balance) {}
+
+BalanceInfo::balance_t BalanceInfo::GetBalance() const {
+  return balance_;
+}
+
+common::Error BalanceInfo::DoDeSerialize(json_object* serialized) {
+  BalanceInfo::balance_t bal;
+  common::Error err = GetDoubleField(serialized, BALANCE_FIELD, &bal);
+  if (err) {
+    return err;
+  }
+
+  *this = BalanceInfo(bal);
+  return common::Error();
+}
+
+common::Error BalanceInfo::SerializeFields(json_object* out) const {
+  ignore_result(SetDoubleField(out, BALANCE_FIELD, balance_));
+  return common::Error();
 }
 
 FullServiceInfo::FullServiceInfo()
