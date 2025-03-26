@@ -62,7 +62,11 @@
 
 namespace {
 
-const auto kServicePriceInUSDPerSec = 25.0 / ((365.25 / 12) * 24 * 3600);  // 25 USD price
+const auto kDaysInMonth = 365.2425 / 12;
+const auto kServicePriceInUSDPerDay = 25.0 / kDaysInMonth;
+const auto kSecondsInTheDay = 24 * 3600;
+
+const auto kServicePriceInUSDPerSec = kServicePriceInUSDPerDay / kSecondsInTheDay;
 const auto kClosedDaemon = common::make_errno_error("Connection closed", EAGAIN);
 
 common::Optional<common::file_system::ascii_file_string_path> MakeStreamConfigJsonPath(
@@ -1366,12 +1370,15 @@ service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
                               static_cast<HttpHandler*>(vods_handler_)->GetOnlineClients(),
                               static_cast<HttpHandler*>(cods_handler_)->GetOnlineClients());
 
-  auto cost = kServicePriceInUSDPerSec * ts_diff;
-  node_stats_->balance += cost;
+  // cost calculation
+  const auto price = kServicePriceInUSDPerSec;
+  const auto cost_per_second = price;
+
+  node_stats_->balance += cost_per_second * ts_diff;
   service::ServerInfo stat(cpu_load, node_stats_->CalcGPULoad(), uptime_str, mem_shot.ram_bytes_total,
                            mem_shot.ram_bytes_free, hdd_shot.hdd_bytes_total, hdd_shot.hdd_bytes_free,
                            bytes_recv / ts_diff, bytes_send / ts_diff, sshot.uptime, current_time, online,
-                           next_nshot.bytes_recv, next_nshot.bytes_send, cost);
+                           next_nshot.bytes_recv, next_nshot.bytes_send, cost_per_second);
 
   return stat;
 }
