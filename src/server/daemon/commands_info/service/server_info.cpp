@@ -45,6 +45,7 @@
 #define ONLINE_USERS_CODS_FIELD "cods"
 
 #define BALANCE_FIELD "balance"
+#define SPEED_FIELD "speed"
 
 namespace fastocloud {
 namespace server {
@@ -153,27 +154,34 @@ OnlineUsers ServerInfo::GetOnlineUsers() const {
   return online_users_;
 }
 
-BalanceInfo::BalanceInfo() : BalanceInfo(0.0) {}
+BalanceInfo::BalanceInfo() : BalanceInfo(0.0, 0.0) {}
 
-BalanceInfo::BalanceInfo(balance_t balance) : balance_(balance) {}
+BalanceInfo::BalanceInfo(balance_t balance, speed_t speed) : balance_(balance), speed_(speed) {}
 
 BalanceInfo::balance_t BalanceInfo::GetBalance() const {
   return balance_;
 }
 
 common::Error BalanceInfo::DoDeSerialize(json_object* serialized) {
-  BalanceInfo::balance_t bal;
+  balance_t bal;
   common::Error err = GetDoubleField(serialized, BALANCE_FIELD, &bal);
   if (err) {
     return err;
   }
 
-  *this = BalanceInfo(bal);
+  speed_t speed;
+  err = GetDoubleField(serialized, SPEED_FIELD, &speed);
+  if (err) {
+    return err;
+  }
+
+  *this = BalanceInfo(bal, speed);
   return common::Error();
 }
 
 common::Error BalanceInfo::SerializeFields(json_object* out) const {
   ignore_result(SetDoubleField(out, BALANCE_FIELD, balance_));
+  ignore_result(SetDoubleField(out, SPEED_FIELD, speed_));
   return common::Error();
 }
 

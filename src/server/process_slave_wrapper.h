@@ -136,6 +136,8 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
 
   service::FullServiceInfo MakeServiceStats(common::time64_t expiration_time) const;
   service::ServerInfo MakeServiceInfoStats() const;
+  double PricePerSecond() const;
+
   struct NodeStats;
 
   const Config config_;

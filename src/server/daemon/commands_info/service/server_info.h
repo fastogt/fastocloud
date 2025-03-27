@@ -75,9 +75,10 @@ class BalanceInfo : public common::serializer::JsonSerializer<BalanceInfo> {
  public:
   typedef JsonSerializer<BalanceInfo> base_class;
   typedef ServerInfo::cost_t balance_t;
+  typedef ServerInfo::cost_t speed_t;
 
   BalanceInfo();
-  BalanceInfo(balance_t balance);
+  BalanceInfo(balance_t balance, speed_t speed);
 
   balance_t GetBalance() const;
 
@@ -87,6 +88,7 @@ class BalanceInfo : public common::serializer::JsonSerializer<BalanceInfo> {
 
  private:
   balance_t balance_;
+  speed_t speed_;
 };
 
 class FullServiceInfo : public ServerInfo {

@@ -1273,7 +1273,8 @@ common::ErrnoError ProcessSlaveWrapper::HandleRequestClientGetBalance(Protocoled
     return errn;
   }
 
-  return dclient->GetBalanceSuccess(service::BalanceInfo(node_stats_->balance));
+  auto cost_per_second = PricePerSecond();
+  return dclient->GetBalanceSuccess(service::BalanceInfo(node_stats_->balance, cost_per_second));
 }
 
 common::ErrnoError ProcessSlaveWrapper::HandleRequestStreamsCommand(stream_client_t* pclient,
@@ -1370,10 +1371,7 @@ service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
                               static_cast<HttpHandler*>(vods_handler_)->GetOnlineClients(),
                               static_cast<HttpHandler*>(cods_handler_)->GetOnlineClients());
 
-  // cost calculation
-  const auto price = kServicePriceInUSDPerSec;
-  const auto cost_per_second = price;
-
+  auto cost_per_second = PricePerSecond();
   node_stats_->balance += cost_per_second * ts_diff;
   service::ServerInfo stat(cpu_load, node_stats_->CalcGPULoad(), uptime_str, mem_shot.ram_bytes_total,
                            mem_shot.ram_bytes_free, hdd_shot.hdd_bytes_total, hdd_shot.hdd_bytes_free,
@@ -1381,6 +1379,14 @@ service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
                            next_nshot.bytes_recv, next_nshot.bytes_send, cost_per_second);
 
   return stat;
+}
+
+double ProcessSlaveWrapper::PricePerSecond() const {
+  const auto price = kServicePriceInUSDPerSec;
+  const auto add = 0;
+  const auto hw = 0;
+  const auto cost_per_second = price + add + hw;
+  return cost_per_second;
 }
 
 }  // namespace server
