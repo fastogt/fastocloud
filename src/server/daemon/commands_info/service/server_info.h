@@ -15,6 +15,7 @@
 #pragma once
 
 #include <fastotv/commands_info/machine_info.h>
+#include <fastotv/commands_info/project_info.h>
 
 #include <common/uri/gurl.h>
 
@@ -114,8 +115,7 @@ class FullServiceInfo : public ServerInfo {
   host_t GetVodsHost() const;
   host_t GetCodsHost() const;
 
-  std::string GetProject() const;
-  std::string GetProjectVersion() const;
+  fastotv::commands_info::LicenseProjectInfo GetProject() const;
 
   std::string GetVsystem() const;
   std::string GetVrole() const;
@@ -128,7 +128,6 @@ class FullServiceInfo : public ServerInfo {
   host_t http_host_;
   host_t vods_host_;
   host_t cods_host_;
-  common::time64_t exp_time_;
 
   std::string hls_dir_;
   std::string vods_dir_;
@@ -138,8 +137,7 @@ class FullServiceInfo : public ServerInfo {
   std::string proxy_dir_;
   std::string data_dir_;
 
-  std::string project_;
-  std::string proj_ver_;
+  fastotv::commands_info::LicenseProjectInfo project_;
   fastotv::commands_info::OperationSystemInfo os_;
 
   std::string vsystem_;

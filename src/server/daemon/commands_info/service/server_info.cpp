@@ -22,11 +22,10 @@
 
 #define OS_FIELD "os"
 #define PROJECT_FIELD "project"
-#define VERSION_FIELD "version"
+
 #define HLS_HOST_FIELD "hls_host"
 #define VODS_HOST_FIELD "vods_host"
 #define CODS_HOST_FIELD "cods_host"
-#define EXPIRATION_TIME_FIELD "expiration_time"
 
 #define VSYSTEM_FIELD "vsystem"
 #define VROLE_FIELD "vrole"
@@ -188,8 +187,9 @@ common::Error BalanceInfo::SerializeFields(json_object* out) const {
 FullServiceInfo::FullServiceInfo()
     : base_class(),
       http_host_(),
-      project_(PROJECT_NAME_LOWERCASE),
-      proj_ver_(PROJECT_VERSION_HUMAN),
+      project_(fastotv::commands_info::LicenseProjectInfo(
+          fastotv::commands_info::ProjectInfo(PROJECT_NAME_LOWERCASE, PROJECT_VERSION_HUMAN),
+          0)),
       os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
       vsystem_(common::system_info::VirtualizationSystem()),
       vrole_(common::system_info::VirtualizationRole()) {}
@@ -210,7 +210,6 @@ FullServiceInfo::FullServiceInfo(const host_t& http_host,
       http_host_(http_host),
       vods_host_(vods_host),
       cods_host_(cods_host),
-      exp_time_(exp_time),
       hls_dir_(hls_dir),
       vods_dir_(vods_dir),
       cods_dir_(cods_dir),
@@ -218,8 +217,7 @@ FullServiceInfo::FullServiceInfo(const host_t& http_host,
       feedback_dir_(feedback_dir),
       proxy_dir_(proxy_dir),
       data_dir_(data_dir),
-      project_(PROJECT_NAME_LOWERCASE),
-      proj_ver_(PROJECT_VERSION_HUMAN),
+      project_(fastotv::commands_info::ProjectInfo(PROJECT_NAME_LOWERCASE, PROJECT_VERSION_HUMAN), exp_time),
       os_(fastotv::commands_info::OperationSystemInfo::MakeOSSnapshot()),
       vsystem_(common::system_info::VirtualizationSystem()),
       vrole_(common::system_info::VirtualizationRole()) {}
@@ -236,12 +234,8 @@ FullServiceInfo::host_t FullServiceInfo::GetCodsHost() const {
   return cods_host_;
 }
 
-std::string FullServiceInfo::GetProject() const {
+fastotv::commands_info::LicenseProjectInfo FullServiceInfo::GetProject() const {
   return project_;
-}
-
-std::string FullServiceInfo::GetProjectVersion() const {
-  return proj_ver_;
 }
 
 std::string FullServiceInfo::GetVsystem() const {
@@ -268,6 +262,15 @@ common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
     }
   }
 
+  json_object* jproj;
+  err = GetObjectField(serialized, PROJECT_FIELD, &jproj);
+  if (!err) {
+    common::Error err = inf.project_.DeSerialize(jproj);
+    if (err) {
+      return err;
+    }
+  }
+
   std::string http_host;
   err = GetStringField(serialized, HLS_HOST_FIELD, &http_host);
   if (!err) {
@@ -286,7 +289,6 @@ common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
     inf.cods_host_ = host_t(cods_host);
   }
 
-  ignore_result(GetInt64Field(serialized, EXPIRATION_TIME_FIELD, &inf.exp_time_));
   ignore_result(GetStringField(serialized, HLS_DIR_FIELD, &inf.hls_dir_));
   ignore_result(GetStringField(serialized, VODS_DIR_FIELD, &inf.vods_dir_));
   ignore_result(GetStringField(serialized, CODS_DIR_FIELD, &inf.cods_dir_));
@@ -294,8 +296,6 @@ common::Error FullServiceInfo::DoDeSerialize(json_object* serialized) {
   ignore_result(GetStringField(serialized, FEEDBACK_DIR_FIELD, &inf.feedback_dir_));
   ignore_result(GetStringField(serialized, DATA_DIR_FIELD, &inf.data_dir_));
   ignore_result(GetStringField(serialized, PROXY_DIR_FIELD, &inf.proxy_dir_));
-  ignore_result(GetStringField(serialized, PROJECT_FIELD, &inf.project_));
-  ignore_result(GetStringField(serialized, VERSION_FIELD, &inf.proj_ver_));
   ignore_result(GetStringField(serialized, VSYSTEM_FIELD, &inf.vsystem_));
   ignore_result(GetStringField(serialized, VROLE_FIELD, &inf.vrole_));
 
@@ -310,13 +310,18 @@ common::Error FullServiceInfo::SerializeFields(json_object* out) const {
     return err;
   }
 
+  json_object* jproj = nullptr;
+  err = project_.Serialize(&jproj);
+  if (err) {
+    return err;
+  }
+
   std::string http_host_str = http_host_.spec();
   std::string vods_host_str = vods_host_.spec();
   std::string cods_host_str = cods_host_.spec();
   ignore_result(SetStringField(out, HLS_HOST_FIELD, http_host_str));
   ignore_result(SetStringField(out, VODS_HOST_FIELD, vods_host_str));
   ignore_result(SetStringField(out, CODS_HOST_FIELD, cods_host_str));
-  ignore_result(SetInt64Field(out, EXPIRATION_TIME_FIELD, exp_time_));
   ignore_result(SetStringField(out, HLS_DIR_FIELD, hls_dir_));
   ignore_result(SetStringField(out, VODS_DIR_FIELD, vods_dir_));
   ignore_result(SetStringField(out, CODS_DIR_FIELD, cods_dir_));
@@ -324,8 +329,7 @@ common::Error FullServiceInfo::SerializeFields(json_object* out) const {
   ignore_result(SetStringField(out, FEEDBACK_DIR_FIELD, feedback_dir_));
   ignore_result(SetStringField(out, DATA_DIR_FIELD, data_dir_));
   ignore_result(SetStringField(out, PROXY_DIR_FIELD, proxy_dir_));
-  ignore_result(SetStringField(out, VERSION_FIELD, proj_ver_));
-  ignore_result(SetStringField(out, PROJECT_FIELD, project_));
+  ignore_result(SetObjectField(out, PROJECT_FIELD, jproj));
   ignore_result(SetObjectField(out, OS_FIELD, jos));
   ignore_result(SetStringField(out, VSYSTEM_FIELD, vsystem_));
   ignore_result(SetStringField(out, VROLE_FIELD, vrole_));
