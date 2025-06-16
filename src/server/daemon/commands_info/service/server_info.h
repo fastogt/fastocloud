@@ -40,6 +40,23 @@ class OnlineUsers : public common::serializer::JsonSerializer<OnlineUsers> {
   size_t http_;
   size_t vods_;
   size_t cods_;
+  size_t proxy_;
+};
+
+class ConnectionsStats : public common::serializer::JsonSerializer<ConnectionsStats> {
+ public:
+  typedef JsonSerializer<ConnectionsStats> base_class;
+  ConnectionsStats();
+  explicit ConnectionsStats(size_t online, size_t connections, size_t requests);
+
+ protected:
+  common::Error DoDeSerialize(json_object* serialized) override;
+  common::Error SerializeFields(json_object* out) const override;
+
+ private:
+  size_t online_;
+  size_t connections_;
+  size_t requests_;
 };
 
 class ServerInfo : public fastotv::commands_info::MachineInfo {
@@ -58,6 +75,7 @@ class ServerInfo : public fastotv::commands_info::MachineInfo {
              time_t uptime,
              fastotv::timestamp_t timestamp,
              const OnlineUsers& online_users,
+             const ConnectionsStats& http,
              size_t net_total_bytes_recv,
              size_t net_total_bytes_send,
              cost_t cost);
@@ -70,6 +88,7 @@ class ServerInfo : public fastotv::commands_info::MachineInfo {
 
  private:
   OnlineUsers online_users_;
+  ConnectionsStats http_;
 };
 
 class BalanceInfo : public common::serializer::JsonSerializer<BalanceInfo> {

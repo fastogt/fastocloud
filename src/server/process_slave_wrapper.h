@@ -166,6 +166,10 @@ class ProcessSlaveWrapper : public common::libev::IoLoopObserver {
 
   std::vector<common::file_system::ascii_directory_string_path> folders_for_monitor_;
   bool stoped_;
+
+  size_t online_clients_;
+  size_t requests_count_;
+  size_t connections_count_;
 };
 
 }  // namespace server

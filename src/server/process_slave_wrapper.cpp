@@ -310,7 +310,10 @@ ProcessSlaveWrapper::ProcessSlaveWrapper(const Config& config)
       check_license_timer_(INVALID_TIMER_ID),
       node_stats_(new NodeStats),
       folders_for_monitor_(),
-      stoped_(false) {
+      stoped_(false),
+      online_clients_(0),
+      requests_count_(0),
+      connections_count_(0)  {
   loop_ = new DaemonServer(config.host, this);
   loop_->SetName("client_server");
 
@@ -558,11 +561,14 @@ void ProcessSlaveWrapper::PreLooped(common::libev::IoLoop* server) {
 
 void ProcessSlaveWrapper::Accepted(common::libev::IoClient* client) {
   UNUSED(client);
+  online_clients_++;
+  connections_count_++;
 }
 
 void ProcessSlaveWrapper::Moved(common::libev::IoLoop* server, common::libev::IoClient* client) {
   UNUSED(server);
   UNUSED(client);
+  online_clients_--;
 }
 
 void ProcessSlaveWrapper::Closed(common::libev::IoClient* client) {
@@ -573,6 +579,7 @@ void ProcessSlaveWrapper::Closed(common::libev::IoClient* client) {
       ignore_result(dclient->SendEOS());
     }
   }
+  online_clients_--;
 }
 
 void ProcessSlaveWrapper::TimerEmited(common::libev::IoLoop* server, common::libev::timer_id_t id) {
@@ -1373,9 +1380,10 @@ service::ServerInfo ProcessSlaveWrapper::MakeServiceInfoStats() const {
 
   auto cost_per_second = PricePerSecond();
   node_stats_->balance += cost_per_second * ts_diff;
+  service::ConnectionsStats http(online_clients_, connections_count_, requests_count_);
   service::ServerInfo stat(cpu_load, node_stats_->CalcGPULoad(), uptime_str, mem_shot.ram_bytes_total,
                            mem_shot.ram_bytes_free, hdd_shot.hdd_bytes_total, hdd_shot.hdd_bytes_free,
-                           bytes_recv / ts_diff, bytes_send / ts_diff, sshot.uptime, current_time, online,
+                           bytes_recv / ts_diff, bytes_send / ts_diff, sshot.uptime, current_time, online, http,
                            next_nshot.bytes_recv, next_nshot.bytes_send, cost_per_second);
 
   return stat;

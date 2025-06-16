@@ -19,6 +19,7 @@
 #include <common/system_info/system_info.h>
 
 #define ONLINE_USERS_FIELD "online_users"
+#define HTTP_FIELD "http"
 
 #define OS_FIELD "os"
 #define PROJECT_FIELD "project"
@@ -45,6 +46,10 @@
 
 #define BALANCE_FIELD "balance"
 #define SPEED_FIELD "speed"
+
+#define CON_ONLINE_CLIENTS_FIELD "online_clients"
+#define CON_CONNECTIONS_COUNT_FIELD "connections_count"
+#define CON_REQUESTS_COUNT_FIELD "requests_count"
 
 namespace fastocloud {
 namespace server {
@@ -80,7 +85,33 @@ common::Error OnlineUsers::SerializeFields(json_object* out) const {
   return common::Error();
 }
 
-ServerInfo::ServerInfo() : base_class(), online_users_() {}
+ConnectionsStats::ConnectionsStats() {}
+
+ConnectionsStats::ConnectionsStats(size_t online, size_t connections, size_t requests)
+    : online_(online), connections_(connections), requests_(requests) {}
+
+common::Error ConnectionsStats::DoDeSerialize(json_object* serialized) {
+  uint64_t online;
+  ignore_result(GetUint64Field(serialized, CON_ONLINE_CLIENTS_FIELD, &online));
+
+  uint64_t conn;
+  ignore_result(GetUint64Field(serialized, CON_CONNECTIONS_COUNT_FIELD, &conn));
+
+  uint64_t req;
+  ignore_result(GetUint64Field(serialized, CON_REQUESTS_COUNT_FIELD, &req));
+
+  *this = ConnectionsStats(online, conn, req);
+  return common::Error();
+}
+
+common::Error ConnectionsStats::SerializeFields(json_object* out) const {
+  ignore_result(SetUInt64Field(out, CON_ONLINE_CLIENTS_FIELD, online_));
+  ignore_result(SetUInt64Field(out, CON_CONNECTIONS_COUNT_FIELD, connections_));
+  ignore_result(SetUInt64Field(out, CON_REQUESTS_COUNT_FIELD, requests_));
+  return common::Error();
+}
+
+ServerInfo::ServerInfo() : base_class(), online_users_(), http_() {}
 
 ServerInfo::ServerInfo(cpu_load_t cpu_load,
                        gpu_load_t gpu_load,
@@ -94,6 +125,7 @@ ServerInfo::ServerInfo(cpu_load_t cpu_load,
                        time_t uptime,
                        fastotv::timestamp_t timestamp,
                        const OnlineUsers& online_users,
+                       const ConnectionsStats& http,
                        size_t net_total_bytes_recv,
                        size_t net_total_bytes_send,
                        cost_t cost)
@@ -111,7 +143,8 @@ ServerInfo::ServerInfo(cpu_load_t cpu_load,
                  net_total_bytes_recv,
                  net_total_bytes_send,
                  cost),
-      online_users_(online_users) {}
+      online_users_(online_users),
+      http_(http) {}
 
 common::Error ServerInfo::SerializeFields(json_object* out) const {
   common::Error err = base_class::SerializeFields(out);
@@ -125,7 +158,14 @@ common::Error ServerInfo::SerializeFields(json_object* out) const {
     return err;
   }
 
+  json_object* jhttp = nullptr;
+  err = http_.Serialize(&jhttp);
+  if (err) {
+    return err;
+  }
+
   ignore_result(SetObjectField(out, ONLINE_USERS_FIELD, obj));
+  ignore_result(SetObjectField(out, HTTP_FIELD, jhttp));
   return common::Error();
 }
 
@@ -140,6 +180,15 @@ common::Error ServerInfo::DoDeSerialize(json_object* serialized) {
   json_bool jonline_exists = json_object_object_get_ex(serialized, ONLINE_USERS_FIELD, &jonline);
   if (jonline_exists) {
     common::Error err = inf.online_users_.DeSerialize(jonline);
+    if (err) {
+      return err;
+    }
+  }
+
+  json_object* jhttp = nullptr;
+  json_bool jhttp_exists = json_object_object_get_ex(serialized, HTTP_FIELD, &jhttp);
+  if (jhttp_exists) {
+    common::Error err = inf.http_.DeSerialize(jhttp);
     if (err) {
       return err;
     }
