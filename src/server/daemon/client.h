@@ -53,7 +53,7 @@ class ProtocoledDaemonClient : public common::libev::websocket::WebSocketServerC
   common::ErrnoError RestartSuccess() WARN_UNUSED_RESULT;
 
   common::ErrnoError GetHardwareHashFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;
-  common::ErrnoError GetHardwareHashSuccess(const common::daemon::commands::HardwareHashInfo& params)
+  common::ErrnoError GetHardwareHashSuccess(const common::daemon::commands::HardwareHashProject& params)
       WARN_UNUSED_RESULT;
 
   common::ErrnoError GetStatsFail(common::http::http_status code, common::Error err) WARN_UNUSED_RESULT;

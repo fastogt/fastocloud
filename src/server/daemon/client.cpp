@@ -111,7 +111,7 @@ common::ErrnoError ProtocoledDaemonClient::GetHardwareHashFail(common::http::htt
 }
 
 common::ErrnoError ProtocoledDaemonClient::GetHardwareHashSuccess(
-    const common::daemon::commands::HardwareHashInfo& params) {
+    const common::daemon::commands::HardwareHashProject& params) {
   json_object* jrequest_init = nullptr;
   common::Error err_ser = params.Serialize(&jrequest_init);
   if (err_ser) {
